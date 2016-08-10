@@ -11,9 +11,9 @@ A 'software sensor' is a node in the proposed network that takes zero or more in
 
 ### Atomic Examples
 
-- Hardware + software: A single sensor that consists of a physical water temperature sensor that is able to automatically broadcast a message with the current water temperature, to the network, every minute.
+- **Hardware + software**: A single sensor that consists of a physical water temperature sensor that is able to automatically broadcast a message with the current water temperature, to the network, every minute.
 
-- Software-only example: A research team that, based on their latest findings, updates a value representing the volume of E. coli required to synthesize biofuel in a given aqueous environment. Whenever the value changes, a message containing the new value is automatically broadcast to the network.
+- **Software-only**: A research team that, based on their latest findings, updates a value representing the volume of E. coli required to synthesize biofuel in a given aqueous environment. Whenever the value changes, a message containing the new value is automatically broadcast to the network.
 
 ## Composite Sensors
 
@@ -21,6 +21,6 @@ A 'software sensor' is a node in the proposed network that takes zero or more in
 
 ### Composite Examples
 
-- Hardware + software example: A single sensor that reads data directly from several physical water temperature sensors, and also subscribes to several water temperature `Atomic` sensors in the network. It then composes the various temperatures into a single average value and automatically broadcasts it to the network in its single, composited message.
+- **Hardware + software**: A single sensor that reads data directly from several physical water temperature sensors, and also subscribes to several water temperature `Atomic` sensors in the network. It then composes the various temperatures into a single average value and automatically broadcasts it to the network in its single, composited message.
 
-- Software-only example: A single sensor that only subscribes to several water temperature `Atomic` sensors in the network and composes the various temperatures into a single average value and automatically broadcasts to the network it in a message.
+- **Software-only**: A single sensor that only subscribes to several water temperature `Atomic` sensors in the network and composes the various temperatures into a single average value and automatically broadcasts to the network it in a message.
