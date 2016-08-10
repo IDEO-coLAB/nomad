@@ -1,0 +1,30 @@
+{
+  "name": "nomad",
+  "version": "1.0.0",
+  "description": "A Dispersed Computing Network Composed of 'Software Sensor'",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IDEO-coLAB/nomad.git"
+  },
+  "keywords": [
+    "sensors",
+    "sensor",
+    "network",
+    "ipfs",
+    "libp2p",
+    "software",
+    "sensor",
+    "nodes"
+  ],
+  "author": "Reid Williams <rwilliams@ideo.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/IDEO-coLAB/nomad/issues"
+  },
+  "homepage": "https://github.com/IDEO-coLAB/nomad#readme"
+}
