@@ -30,6 +30,7 @@ module.exports = class Node {
     this.connected = null
     this.currentDAG = { data: null, path: null }
     this.subscriptions = { connected: [], disconnected: [] }
+    this.store = {}
   }
 
   connect () {

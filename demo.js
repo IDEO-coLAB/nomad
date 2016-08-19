@@ -10,11 +10,11 @@ node.connect()
   })
   .catch((e) => {
     console.log('DEMO Error: ', e)
-    return node.publish('Hey you, Gavin!!!')
+    // return node.publish('Hey you, Gavin!!!')
   })
-  .then((node) => {
-    console.log('DMEO CODE: it was PUBLLISHED', node)
-  })
-  .catch((e) => {
-    console.log('DEMO Error: ', e)
-  })
+  // .then((node) => {
+  //   console.log('DMEO CODE: it was PUBLLISHED', node)
+  // })
+  // .catch((e) => {
+  //   console.log('DEMO Error: ', e)
+  // })

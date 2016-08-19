@@ -13,10 +13,11 @@ module.exports.sync = (node) => {
     .then((head) => {
       log('Resolved to current object head:', head.Path)
       node.currentDAG.path = head.Path // currently an /ipfs/ object (not ipns)
-      return utils.getObjectDataFromDAGPath(node.currentDAG.path)
+      return utils.getDAGObjectFromDAGPath(node.currentDAG.path)
     })
     .then((headData) => {
       node.currentDAG.data = headData
+      log('Node currentDAG set!')
       return node
     })
     .catch((error) => {
@@ -70,6 +71,6 @@ module.exports.publish = (data, node) => {
       return node
     })
     .catch((error) => {
-      return Promise.reject({ publishError: error })
+      return Promise.reject({ publishSyncError: error })
     })
 }

@@ -12,9 +12,13 @@ module.exports.extractMultihashFromPath = (path) => {
   return R.replace('\/ipfs\/', '', path)
 }
 
-module.exports.getObjectDataFromDAGPath = (DAGPath) => {
+module.exports.getDAGObjectFromDAGPath = (DAGPath) => {
   return ipfs.object.get(module.exports.bufferFromBase58(module.exports.extractMultihashFromPath(DAGPath)))
 }
+
+// module.exports.getDAGDataFromBuffer = (buffer) => {
+
+// }
 
 module.exports.addDataToIPFS = (string) => {
   if (R.type(string) !== 'String') {
