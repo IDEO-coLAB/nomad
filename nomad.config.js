@@ -1,12 +1,9 @@
-// "QmYcbm7GPAd3S7nSSrsxuyxef9KQ7fR3SkTmLcWX9BdN8y"   // resolves
+// "QmYcbm7GPAd3S7nSSrsxuyxef9KQ7fR3SkTmLcWX9BdN8y"   // resolves (is an id)
 // "Qmf8Ps1gfrkDRXjF2vsBwEbThczvPepSzXUA3yh64aSVD6"   // does not resolve
+// "Qmc6cSnvbGUfiJaUmu5tX4AzX1HUqdrokLvDMJk5gihQ76" is a content hash
 
 module.exports = {
-  identity: {
-    nodeID: 'hashA',
-    privKey: 'some priv key'  /* func to return a value or just plain value??? */
-  },
-  sources: [
+  subscriptions: [
     "QmYcbm7GPAd3S7nSSrsxuyxef9KQ7fR3SkTmLcWX9BdN8y",
     "Qmf8Ps1gfrkDRXjF2vsBwEbThczvPepSzXUA3yh64aSVD6"
   ]

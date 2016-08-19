@@ -111,7 +111,24 @@ import nomad from 'nomad'
 // perhaps later...
 
 
-nomad.connect()
+// or?
+let sensor = new nomad.Node()
+sensor.connect()
+
+sensor.read('a')
+sensor.read()
+
+sensor.publish(/* data */)
+
+
+
+
+
+
+
+
+
+nomad.init()
 .then((id) => {
   // true / false?
   // return the online network peer identity?

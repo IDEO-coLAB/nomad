@@ -28,11 +28,12 @@
   },
   "homepage": "https://github.com/IDEO-coLAB/nomad#readme",
   "dependencies": {
-    "async": "2.0.1",
     "bs58": "3.0.0",
     "ipfs-api": "6.0.3",
     "ipfs-merkle-dag": "0.6.2",
+    "peer-id": "0.7.0",
     "pull-stream": "3.4.3",
+    "q": "1.4.1",
     "ramda": "0.22.1",
     "winston": "2.2.0"
   }
