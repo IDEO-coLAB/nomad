@@ -61,3 +61,13 @@ module.exports.sync = (node) => {
       return Promise.reject({ subscribeSyncError: error })
     })
 }
+
+
+
+
+// node.on().then((data) +> {
+//   stuff = data[a]
+  
+// })
+
+// node.on('a').then()
