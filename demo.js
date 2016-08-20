@@ -5,16 +5,17 @@ const node = new Node()
 
 node.connect()
   .then((d) => {
-    console.log('DMEO CODE: CONNECTED!!!!')
-    // return node.publish('Hey you, Gavin was here and it was working')
+    console.log('DEMO: CONNECTED!!!!')
+    return node.publish('Hey there, Gavin!')
   })
   .catch((e) => {
-    console.log('DEMO Error: ', e)
-    // return node.publish('Hey you, Gavin!!!')
+    console.log('DEMO: CONNECT ERROR!!!!', e)
+    console.log(e)
+    return node.publish('Hey there, Gavin!')
   })
-  .then((node) => {
-    console.log('DMEO CODE: it was PUBLLISHED', node)
+  .then((d) => {
+    console.log('DEMO: PUBLLISHED!!!!')
   })
   .catch((e) => {
-    console.log('DEMO Error: ', e)
+    console.log('DEMO: PUBLISH ERROR!!!!', e)
   })

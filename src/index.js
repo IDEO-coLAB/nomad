@@ -1,34 +1,25 @@
+'use strict'
+
 const ipfsApi = require('ipfs-api')
 const R = require('ramda')
 const Q = require('q')
 const async = require('async')
-
 const config = require('./../nomad.config')
-const log = require('./log')
 const pub = require('./publish')
 const sub = require('./subscribe')
-const utils = require('./utils')
+const log = require('./utils/log')
+const env = require('./utils/env')
 
 const ipfs = ipfsApi()
-
-
-const atomic = function checkAtomicity() {
-  const subs = config.subscriptions
-  if (!subs) return true
-  if (!R.isArrayLike(subs)) throw new Error('Config subscriptions must be an <Array>')
-  if (R.isEmpty(subs)) return true
-  return false
-}()
-
 
 module.exports = class Node {
   constructor () {
     // TODO: check for a config in the bootup?
-    this.atomic = atomic
+    this.atomic = env.isAtomic
     this.config = config
     this.identity = null
     this.connected = null
-    this.currentDAG = { data: null, path: null }
+    this.currentDAG = { node: null, path: null }
     this.subscriptions = { connected: [], disconnected: [] }
     this.store = {}
   }
@@ -47,7 +38,7 @@ module.exports = class Node {
 
     return ipfs.id()
       .then((identity) => {
-        log('Connected to IPFS peers with ID:', identity.ID)
+        log('NODE: Connected to IPFS peers with ID:', identity.ID)
         this.identity = identity
         this.connected = true
 
