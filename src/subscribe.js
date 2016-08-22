@@ -4,12 +4,16 @@ const multihash = require('multihashes')
 const R = require('ramda')
 const Q = require('q')
 
-const log = require('./utils/log')
-const network = require('./utils/network')
+const { log, logError } = require('./utils/log')
 const ipfsUtils = require('./utils/ipfs')
 
 
-const RESOLUTION_WAIT_DURATION = 5000
+
+
+
+
+
+
 
 // Name resolve a single multihash
 const nameResolveSingleMultihash = (subMultihash) => {

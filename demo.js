@@ -4,9 +4,9 @@ const Node = require('./src/sensor')
 const node = new Node()
 
 node.connect()
-  .then((d) => {
+  .then((node) => {
     console.log('DEMO: CONNECTED!!!!')
-    return node.publish('Hey there, G-Unit!')
+    return node.publish('Test before push')
   })
   .catch((e) => {
     console.log('DEMO: CONNECT ERROR!!!!', e)

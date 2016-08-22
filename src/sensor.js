@@ -5,18 +5,18 @@ const R = require('ramda')
 const Q = require('q')
 const async = require('async')
 const config = require('./../nomad.config')
-const { syncHead, publish } = require('./publish')
-// const { syncSubs } = require('./subscribe')
+const { syncHead, publish, publishRoot } = require('./publish')
+// const { syncSubscriptions } = require('./subscribe')
 const { log } = require('./utils/log')
-const env = require('./utils/env')
-const ipfsUtils = require('./utils/ipfs')
+const { isAtomic } = require('./utils/constants')
+const { id } = require('./utils/ipfs')
 
 const MODULE_NAME = 'SENSOR'
 
 module.exports = class Node {
   constructor () {
     // TODO: check for a config in the bootup?
-    this.atomic = env.isAtomic
+    this.atomic = isAtomic
     this.config = config
     this.identity = null
     this.network = { connected: false }
@@ -38,10 +38,10 @@ module.exports = class Node {
     const connectComposite = () => {
       log(`${MODULE_NAME}: Connecting a composite sensor`)
       return syncHead(this)
-        // .then(subscribe.sync)
+        // .then(syncSubscriptions)
     }
 
-    return ipfsUtils.id()
+    return id()
       .then((identity) => {
         log(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)
 
@@ -52,8 +52,13 @@ module.exports = class Node {
       })
   }
 
-  publish (data, opts={}) {
-    log(`${MODULE_NAME}: Publishing latest data`)
-    return publish(data, this, opts)
+  publish (data) {
+    log(`${MODULE_NAME}: Publishing new data`)
+    return publish(data, this)
+  }
+
+  publishRoot (data) {
+    log(`${MODULE_NAME}: Publishing new root`)
+    return publishRoot(data, this)
   }
 }

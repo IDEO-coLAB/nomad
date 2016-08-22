@@ -34,72 +34,29 @@ const linkNewSensorHeadToPrev = (sourceDAG, targetDAG) => {
 
 // Publish the new sensor head to the network
 const publishNewSensorHead = (dag, node) => {
-  log(`${MODULE_NAME}: Publishing new sensor head`)
+  log(`${MODULE_NAME}: Publishing new sensor head: ${dag.toJSON().Hash} with links`, dag.toJSON().Links)
 
   return ipfsUtils.object.put(dag)
     .then((headDAG) => {
       node.head.DAG = headDAG
       return ipfsUtils.name.publish(headDAG)
     })
-    .then((publishedDAG) => {
-      console.log('published new sensor head ', publishedDAG)
-      node.head.path = `/ipfs/${publishedDAG.Value}`
+    .then((published) => {
+      // { Name: <cur node id>, Value: <new node head hash> }
+      node.head.path = `/ipfs/${published.Value}`
       return node
     })
 }
 
-
-
-
-
-
-
-
-
-// REWORK THIS
-// REWORK THIS
-// REWORK THIS
-
-// Publish the current sensor head
+// Resolve the current sensor head based on the sensor ipfs id
 const resolveSensorHead = (node) => {
   const id = node.identity.ID
-  log(`${MODULE_NAME}: Resolving sensor head: ${id}`)
+  log(`${MODULE_NAME}: Resolving sensor head: ${id} via IPNS`)
 
-
-
-
-
-  // TODO: what if it fails to reolve because of network delays, etc
-  // THOUGHT: we might overwrite the head unwittingly and muss up the chain...
   return ipfsUtils.name.resolve(id)
-    .then((head) => {
-      const resolved = !!head
-      if (resolved) return { skip: true, head }
-    })
-    .catch((error) => {
-      return publishSensorRoot(DEFAULT_ROOT_MESSAGE, node)
-    })
-    .then((data) => {
-      if (data.skip) return Promise.resolve(data.head)
-      return network.repeatAttempt(RETRY_THROTTLE_DELAYS, () => {
-        return ipfsUtils.name.resolve(id)
-      })
-    })
-
-
-
 }
 
-// REWORK THIS
-// REWORK THIS
-// REWORK THIS
-
-// Allow developer to throttle things..not us!
-
-
-
-
-
+// API
 
 // Publish the a first sensor root object in the network
 // This will have no 'prev' link in it
@@ -119,17 +76,6 @@ const publishSensorData = (data, node) => {
     .then((newDAG) => linkNewSensorHeadToPrev(node.head.DAG, newDAG))
     .then((newDAG) => publishNewSensorHead(newDAG, node))
     .catch((error) => Promise.reject({ PUBLISH_ERROR: error }))
-}
-
-// API
-
-const publish = (data, node, opts) => {
-  log(`${MODULE_NAME}: Calling internal publish`)
-
-  const pubRoot = opts.root
-  return pubRoot
-    ? publishSensorRoot(data, node)
-    : publishSensorData(data, node)
 }
 
 // Sync the sensor object with the latest head in the network
@@ -154,13 +100,15 @@ const syncHead = (node) => {
       return node
     })
     .catch((error) => {
-      return Promise.reject({ customSyncError: error })
+      logError(`${MODULE_NAME}: Failed to sync sensor head with network`, err.message)
+      return Promise.reject({ syncHead: error })
     })
 }
 
 // API
 
 module.exports = {
-  syncHead: syncHead,
-  publish: publish
+  publish: publishSensorData,
+  publishRoot: publishSensorRoot,
+  syncHead,
 }
