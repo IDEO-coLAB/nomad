@@ -4,7 +4,7 @@ const R = require('ramda')
 const log = require('./log')
 
 // func must return a promise
-const setTimeoutP = (func, time) => {
+const setTimeoutP = (func, delay) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       func()
@@ -16,7 +16,7 @@ const setTimeoutP = (func, time) => {
           log('setTimeoutP rejecting')
           reject(error)
         })
-    }, time)
+    }, delay)
   })
 }
 
@@ -42,9 +42,27 @@ const repeatAttempt = (attemptTimers, func) => {
     .catch((error) => {
       log('repeatAttempt failed')
       return setTimeoutP(() => {
-        return repeatAttempt( R.tail(attemptTimers), func)
+        return repeatAttempt(R.tail(attemptTimers), func)
       }, R.head(attemptTimers))
     })
 }
 
-module.exports = { setTimeoutP, repeatAttempt }
+const rejectAfter = (func, delay) => {
+  return new Promise((resolve, reject) => {
+    console.log('DELAY', delay)
+    console.log('FUNC', func)
+    func().then((d) => {
+      console.log('RESOLVED', d)
+      resolve(d)
+    }).catch((e) => {
+      console.log('REJECTED', e)
+      reject(e)
+    })
+    // setTimeout(() => {
+    //   console.log('REJECTED IN TIMEOUT')
+    //   reject('ERR!!!!')
+    // }, delay)
+  })
+}
+
+module.exports = { setTimeoutP, repeatAttempt, rejectAfter }

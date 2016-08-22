@@ -31,10 +31,12 @@
     "bs58": "3.0.0",
     "ipfs-api": "6.0.3",
     "ipfs-merkle-dag": "0.6.2",
+    "multihashes": "0.2.2",
     "peer-id": "0.7.0",
     "pull-stream": "3.4.3",
     "q": "1.4.1",
     "ramda": "0.22.1",
+    "save": "2.3.0",
     "winston": "2.2.0"
   }
 }

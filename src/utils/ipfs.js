@@ -3,68 +3,91 @@
 const bs58 = require('bs58')
 const ipfsApi = require('ipfs-api')
 const R = require('ramda')
+const Q = require('q')
 const { DAGLink } = require('ipfs-merkle-dag')
-const log = require('./log')
+const { log } = require('./log')
 
 const ipfs = ipfsApi()
 
-const bufferFromBase58 = (str) => {
-  return new Buffer(bs58.decode(str))
+const MODULE_NAME = 'IPFS'
+
+// General Utils
+const bufferFromBase58 = (str) => new Buffer(bs58.decode(str))
+
+const multihashFromPath = (path) => R.replace('\/ipfs\/', '', path)
+
+// ID Utils
+const id = () => {
+  log(`${MODULE_NAME}: Checking connection to network`)
+  return ipfs.id()
 }
 
-const multihashFromPath = (path) => {
-  return R.replace('\/ipfs\/', '', path)
-}
+// Data Utils
+const data = {
+  add: (data) => {
+    log(`${MODULE_NAME}: Getting a hash for newly added data`)
 
-const getDAGObjectFromDAGPath = (DAGPath) => {
-  return ipfs.object.get(bufferFromBase58(multihashFromPath(DAGPath)))
-}
+    let published = data
+    if (R.type(data) !== 'String') {
+      published = JSON.stringify(data)
+    }
 
-const putObject = (dag) => {
-  log('IPFS: Putting new ipfs object')
-  return ipfs.object.put(dag)
-}
-
-const createObject = () => {
-  log('IPFS: Creating new ipfs object')
-  return ipfs.object.new()
-}
-
-const publishObject = (dag) => {
-  log('IPFS: Publishing to IPNS')
-  return ipfs.name.publish(dag.toJSON().Hash)
-}
-
-const addData = (data) => {
-  log('IPFS: Adding new data object')
-  let published = data
-  if (R.type(data) !== 'String') {
-    published = JSON.stringify(data)
+    return ipfs.add(new Buffer(published, 'utf8'))
   }
-  return ipfs.add(new Buffer(published, 'utf8'))
 }
 
-const addLinkToObject = (sourceDAG, targetDAG, linkName) => {
-  log('IPFS: Adding ' + linkName + ' link to a target DAG object')
-  const newLink = new DAGLink(
-    linkName,
-    targetDAG.node.data.Size,
-    bufferFromBase58(multihashFromPath(targetDAG.path))
-  )
-  return ipfs.object.patch.addLink(bufferFromBase58(sourceDAG.toJSON().Hash), newLink)
+// Name Utils
+const name = {
+  resolve: (id) => {
+    log(`${MODULE_NAME}: Resolving hash ${id}`)
+    return ipfs.name.resolve(id)
+  }
 }
 
-const resolve = (id) => {
-  log('IPFS: Resolving: ', id)
-  return ipfs.name.resolve(id)
+// Object Utils
+const object = {
+  // Currently expect lookup to be a DAG path...generify this
+  // TODO: abstract!
+  get: (lookup) => {
+    log(`${MODULE_NAME}: Getting object ${lookup}`)
+    return ipfs.object.get(bufferFromBase58(multihashFromPath(lookup)))
+  },
+
+  // Currently expect lookup to be a <buffer>...generify this
+  // TODO: abstract!
+  data: (lookup) => {
+    log(`${MODULE_NAME}: Getting object data for ${lookup}`)
+    return ipfs.object.data(lookup)
+  },
+
+  put: (dag) => {
+    log(`${MODULE_NAME}: Putting a DAG object`)
+    return ipfs.object.put(dag)
+  },
+
+  create: () => {
+    log(`${MODULE_NAME}: Creating a new DAG object`)
+    return ipfs.object.new()
+  },
+
+  publish: (dag) => {
+    const hash = dag.toJSON().Hash
+    log(`${MODULE_NAME}: Publishing ${hash} to IPNS`)
+    return ipfs.name.publish(hash)
+  },
+
+  link: (sourceDAG, targetDAG, linkName) => {
+    log(`${MODULE_NAME}: Adding ${linkName} to an object`)
+
+    const hash = sourceDAG.toJSON().Hash
+    const newLink = new DAGLink(
+      linkName,
+      targetDAG.node.data.Size,
+      bufferFromBase58(multihashFromPath(targetDAG.path))
+    )
+
+    return ipfs.object.patch.addLink(bufferFromBase58(hash), newLink)
+  }
 }
 
-module.exports = {
-  addData,
-  putObject,
-  publishObject,
-  createObject,
-  addLinkToObject,
-  resolve,
-  getDAGObjectFromDAGPath
-}
+module.exports = { id, data, name, object }

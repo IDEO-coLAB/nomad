@@ -1,92 +1,121 @@
 'use strict'
 
 const R = require('ramda')
-const log = require('./utils/log')
+const { log, logError } = require('./utils/log')
+const constants = require('./utils/constants')
 const network = require('./utils/network')
 const ipfsUtils = require('./utils/ipfs')
 
-const DEFAULT_ROOT_MESSAGE = {
-  message: 'Hello from Nomad!',
-  timestamp: new Date().toString()
-}
+const MODULE_NAME = 'PUBLISH'
 
-const RETRY_THROTTLE_DELAYS = [15000, 20000, 45000, 60000]
 
-// Creates unlinked container DAG object with the data
-const createNomadObject = (data) => {
-  log('NOMAD: Attempting to create a new ipfs object')
-  return Promise.all([ ipfsUtils.createObject(), ipfsUtils.addData(data) ])
+
+
+const initNewSensorHead = (data) => {
+  log(`${MODULE_NAME}: Initializing a new sensor head`)
+
+  return Promise.all([ ipfsUtils.object.create(), ipfsUtils.data.add(data) ])
     .then((results) => {
-      const newDAGObject = R.head(results)
-      const newDataDAG = R.head(R.last(results))
-      return ipfsUtils.addLinkToObject(newDAGObject, newDataDAG, 'data')
+      const emptyDAG = R.head(results)
+      const dataDAG = R.head(R.last(results))
+      const linkName = `data`
+
+      log(`${MODULE_NAME}: Adding ${linkName} link to new sensor head`)
+
+      return ipfsUtils.object.link(emptyDAG, dataDAG, 'data')
     })
 }
 
-const linkNomadObjects = (sourceDAG, targetDAG) => {
-  log('NOMAD: Attempting to link new head object with prev head')
-  return ipfsUtils.addLinkToObject(sourceDAG, targetDAG, 'prev')
+const linkNewSensorHeadToPrev = (sourceDAG, targetDAG) => {
+  const linkName = `prev`
+  log(`${MODULE_NAME}: Adding ${linkName} link to new sensor head`)
+
+  return ipfsUtils.object.link(sourceDAG, targetDAG, linkName)
 }
 
-const updateNomadHead = (dag, node) => {
-  log('NOMAD: Attempting to update and publish the new head')
-  return ipfsUtils.putObject(dag)
+const publishNewSensorHead = (dag, node) => {
+  log(`${MODULE_NAME}: Publishing new sensor head`)
+
+  return ipfsUtils.object.put(dag)
     .then((putDAG) => {
-      node.currentDAG = Object.assign({}, node.currentDAG, { data: putDAG })
-      return ipfsUtils.publishObject(putDAG)
+      node.current = Object.assign({}, node.current, { data: putDAG })
+      console.log(putDAG.toJSON())
+      console.log(putDAG)
+
+      return ipfsUtils.object.publish(putDAG)
     })
     .then((publishedDAG) => {
-      node.currentDAG = Object.assign({}, node.currentDAG, { path: `/ipfs/${publishedDAG.Value}` })
+      node.current = Object.assign({}, node.current, { path: `/ipfs/${publishedDAG.Value}` })
       return node
     })
 }
 
-const resolveNomadNodeHead = (node) => {
-  log('NOMAD: Attempting to resolve the current node head')
+
+
+
+const resolveSensorHead = (node) => {
+  log(`${MODULE_NAME}: Resolving sensor head`)
+
   const id = node.identity.ID
+
+
+  // REWORK THIS
+  // REWORK THIS
+  // REWORK THIS
   // TODO: what if it fails to reolve because of network delays, etc
   // THOUGHT: we might overwrite the head unwittingly and muss up the chain...
-  return ipfsUtils.resolve(id)
+  return ipfsUtils.name.resolve(id)
     .then((head) => {
       const resolved = !!head
       if (resolved) return { skip: true, head }
     })
     .catch((error) => {
-      return publishNomadRoot(DEFAULT_ROOT_MESSAGE, node)
+      return publishSensorRoot(DEFAULT_ROOT_MESSAGE, node)
     })
     .then((data) => {
       if (data.skip) return Promise.resolve(data.head)
       return network.repeatAttempt(RETRY_THROTTLE_DELAYS, () => {
-        return ipfsUtils.resolve(id)
+        return ipfsUtils.name.resolve(id)
       })
     })
+    // REWORK THIS
+    // REWORK THIS
+    // REWORK THIS
 }
 
-const publishNomadRoot = (data, node) => {
-  log('NOMAD: Attempting to publish a new root')
-  return createNomadObject(data)
-    .then((newDAG) => updateNomadHead(newDAG, node))
+
+
+
+
+const publishSensorRoot = (data, node) => {
+  log(`${MODULE_NAME}: Publishing sensor root`)
+
+  return initNewSensorHead(data)
+    .then((newDAG) => publishNewSensorHead(newDAG, node))
     .catch((error) => Promise.reject({ PUBLISH_ROOT_ERROR: error }))
 }
 
-const publishNomadUpdate = (data, node) => {
-  log('NOMAD: Attempting to publish a new head')
-  return createNomadObject(data)
-    .then((newDAG) => linkNomadObjects(newDAG, node.currentDAG))
-    .then((newDAG) => updateNomadHead(newDAG, node))
+const publishSensorData = (data, node) => {
+  log(`${MODULE_NAME}: Publishing sensor data`)
+
+  return initNewSensorHead(data)
+    .then((newDAG) => linkNewSensorHeadToPrev(newDAG, node.current))
+    .then((newDAG) => publishNewSensorHead(newDAG, node))
     .catch((error) => Promise.reject({ PUBLISH_ERROR: error }))
 }
 
-const sync = (node) => {
-  return resolveNomadNodeHead(node)
+const syncSensorHead = (node) => {
+  log(`${MODULE_NAME}: Syncing with current sensor head`)
+
+  return resolveSensorHead(node)
     .then((head) => {
-      log('NOMAD: Resolved to current object head:', head.Path)
-      node.currentDAG.path = head.Path // currently an /ipfs/ object (not ipns)
-      return ipfsUtils.getDAGObjectFromDAGPath(node.currentDAG.path)
+      log('PUBLISH: Resolved to current object head:', head.Path)
+      node.current.path = head.Path // currently an /ipfs/ object (not ipns)
+      return ipfsUtils.object.get(node.current.path)
     })
     .then((headData) => {
-      log('NOMAD: Set the currentDAG for the node')
-      node.currentDAG.node = headData
+      log('PUBLISH: Set the currentDAG for the node')
+      node.current.node = headData
       return node
     })
     .catch((error) => {
@@ -95,6 +124,13 @@ const sync = (node) => {
 }
 
 module.exports = {
-  sync,
-  publish: publishNomadUpdate
+  sync: syncSensorHead,
+  publish: publishSensorData
 }
+
+
+
+
+
+
+
