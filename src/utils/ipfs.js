@@ -5,7 +5,7 @@ const ipfsApi = require('ipfs-api')
 const R = require('ramda')
 const Q = require('q')
 const { DAGLink } = require('ipfs-merkle-dag')
-const { log } = require('./log')
+const { log, logWarn } = require('./log')
 
 const ipfs = ipfsApi()
 
@@ -41,6 +41,12 @@ const name = {
   resolve: (id) => {
     log(`${MODULE_NAME}: Resolving hash ${id}`)
     return ipfs.name.resolve(id)
+  },
+
+  publish: (dag) => {
+    const hash = dag.toJSON().Hash
+    log(`${MODULE_NAME}: Publishing ${hash} to IPNS`)
+    return ipfs.name.publish(hash)
   }
 }
 
@@ -70,23 +76,22 @@ const object = {
     return ipfs.object.new()
   },
 
-  publish: (dag) => {
-    const hash = dag.toJSON().Hash
-    log(`${MODULE_NAME}: Publishing ${hash} to IPNS`)
-    return ipfs.name.publish(hash)
-  },
-
   link: (sourceDAG, targetDAG, linkName) => {
     log(`${MODULE_NAME}: Adding ${linkName} to an object`)
 
-    const hash = sourceDAG.toJSON().Hash
+    const sourceHash = sourceDAG.toJSON().Hash
+    const targetHash = targetDAG.toJSON().Hash
+
+
+    const targetDataSize = targetDAG.data ? targetDAG.data.Size : 0
+    // TODO: try catch
     const newLink = new DAGLink(
       linkName,
-      targetDAG.node.data.Size,
-      bufferFromBase58(multihashFromPath(targetDAG.path))
+      targetDataSize,
+      bufferFromBase58(targetHash)
     )
 
-    return ipfs.object.patch.addLink(bufferFromBase58(hash), newLink)
+    return ipfs.object.patch.addLink(bufferFromBase58(sourceHash), newLink)
   }
 }
 

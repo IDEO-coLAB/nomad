@@ -5,8 +5,8 @@ const R = require('ramda')
 const Q = require('q')
 const async = require('async')
 const config = require('./../nomad.config')
-const { sync, publish } = require('./publish')
-// const subscribe = require('./subscribe')
+const { syncHead, publish } = require('./publish')
+// const { syncSubs } = require('./subscribe')
 const { log } = require('./utils/log')
 const env = require('./utils/env')
 const ipfsUtils = require('./utils/ipfs')
@@ -21,29 +21,29 @@ module.exports = class Node {
     this.identity = null
     this.network = { connected: false }
 
+    this.head = { DAG: null, path: null }
 
-    this.current = { node: null, path: null }
     this.subscriptions = {}
     this.store = {}
   }
 
   connect () {
-    const connectAtomic = () => {
-      log(`${MODULE_NAME}: < BOOTING UP ATOMIC SENSOR >`)
+    log(`${MODULE_NAME}: Connecting sensor to the network`)
 
-      return sync(this)
+    const connectAtomic = () => {
+      log(`${MODULE_NAME}: Connecting an atomic sensor`)
+      return syncHead(this)
     }
 
     const connectComposite = () => {
-      log(`${MODULE_NAME}: < BOOTING UP COMPOSITE SENSOR >`)
-
-      return sync(this)
+      log(`${MODULE_NAME}: Connecting a composite sensor`)
+      return syncHead(this)
         // .then(subscribe.sync)
     }
 
     return ipfsUtils.id()
       .then((identity) => {
-        log(`${MODULE_NAME}: Connected to IPFS peers with ID: ${identity.ID}`)
+        log(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)
 
         this.identity = identity
         this.network.connected = true
@@ -52,7 +52,8 @@ module.exports = class Node {
       })
   }
 
-  publish (data) {
-    return publish(data, this)
+  publish (data, opts={}) {
+    log(`${MODULE_NAME}: Publishing latest data`)
+    return publish(data, this, opts)
   }
 }
