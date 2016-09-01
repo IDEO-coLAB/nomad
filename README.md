@@ -1,3 +1,13 @@
+### !! Nomad is currently in heavy development !!
+
+This library is in flux and not quite ready for active 3rd party usage. When ready, this doc will be updated to with API usage info as soon as possible. 
+
+Our goal is to open this up by the end of Sept. 2016. _Onward!_
+
+---------
+
+<br />
+
 # Nomad
 A dispersed computing network composed of living 'Software Sensors'
 
