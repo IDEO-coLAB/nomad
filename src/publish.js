@@ -100,7 +100,7 @@ const syncHead = (node) => {
       return node
     })
     .catch((error) => {
-      logError(`${MODULE_NAME}: Failed to sync sensor head with network`, err.message)
+      logError(`${MODULE_NAME}: Failed to sync sensor head with network`, error.message)
       return Promise.reject({ syncHead: error })
     })
 }
