@@ -3,7 +3,7 @@
 const Node = require('./src/sensor')
 const node = new Node()
 
-node.connect()
+node.prepareToPublish()
   .then((node) => {
     console.log('DEMO: CONNECTED!!!!')
     return node.publish('Test before push')
@@ -19,3 +19,5 @@ node.connect()
   .catch((e) => {
     console.log('DEMO: PUBLISH ERROR!!!!', e)
   })
+
+

@@ -27,7 +27,7 @@ module.exports = class Node {
     this.store = {}
   }
 
-  connect () {
+  prepareToPublish () {
     log(`${MODULE_NAME}: Connecting sensor to the network`)
 
     const connectAtomic = () => {
