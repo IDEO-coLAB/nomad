@@ -6,12 +6,13 @@ const Q = require('q')
 const async = require('async')
 const config = require('./../nomad.config')
 const { syncHead, publish, publishRoot } = require('./publish')
-// const { syncSubscriptions } = require('./subscribe')
+const { getNewSubscriptionMessages } = require('./subscribe')
 const { log } = require('./utils/log')
 const { isAtomic } = require('./utils/constants')
 const { id } = require('./utils/ipfs')
 
 const MODULE_NAME = 'SENSOR'
+const POLL_MILLIS = 1000 * 60
 
 module.exports = class Node {
   constructor () {
@@ -60,5 +61,10 @@ module.exports = class Node {
   publishRoot (data) {
     log(`${MODULE_NAME}: Publishing new root`)
     return publishRoot(data, this)
+  }
+
+  subscribe (cb) {
+    log(`${MODULE_NAME}: Subscribing to ${R.length(config.subscriptions)} subscriptions`)
+    return getNewSubscriptionMessages(config.subscriptions, cb)
   }
 }

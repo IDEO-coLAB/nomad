@@ -4,7 +4,7 @@
 
 module.exports = {
   subscriptions: [
-    "QmYcbm7GPAd3S7nSSrsxuyxef9KQ7fR3SkTmLcWX9BdN8y",
+    "Qmf8Ps1gfrkDRXjF2vsBwEbThczvPepSzXUA3yh64aSVD6",
     "Qmf8Ps1gfrkDRXjF2vsBwEbThczvPepSzXUA3yh64aSVD6"
   ]
 }

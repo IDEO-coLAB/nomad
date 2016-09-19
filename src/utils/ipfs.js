@@ -4,6 +4,7 @@ const bs58 = require('bs58')
 const ipfsApi = require('ipfs-api')
 const R = require('ramda')
 const Q = require('q')
+const streamToPromise = require('stream-to-promise')
 const { DAGLink } = require('ipfs-merkle-dag')
 const { log, logError } = require('./log')
 
@@ -13,6 +14,7 @@ const MODULE_NAME = 'IPFS'
 
 // General Utils
 const bufferFromBase58 = (str) => new Buffer(bs58.decode(str))
+const base58FromBuffer = bs58.encode
 
 const extractMultihashFromPath = (path) => R.replace('\/ipfs\/', '', path)
 
@@ -57,11 +59,11 @@ const object = {
     return ipfs.object.get(bufferFromBase58(extractMultihashFromPath(lookup)))
   },
 
-  // Currently expect lookup to be a <buffer>...generify this
+  // Currently expect lookup to be a DAG path...generify this
   // TODO: abstract!
   data: (lookup) => {
     log(`${MODULE_NAME}: Getting object data for ${lookup}`)
-    return ipfs.object.data(lookup)
+    return ipfs.object.data(bufferFromBase58(extractMultihashFromPath(lookup)))
   },
 
   put: (dag) => {
@@ -88,7 +90,20 @@ const object = {
     )
 
     return ipfs.object.patch.addLink(bufferFromBase58(targetHash), newLink)
+  },
+
+  // Currently expect DAG hash
+  cat: (lookup) => {
+    log(`${MODULE_NAME}: Cat-ing ${lookup}`)
+    return ipfs.cat(lookup).then((readStream) => {
+      return streamToPromise(readStream)
+    })
+    .then((buffer) => {
+      return buffer.toString()
+    })
   }
 }
 
-module.exports = { id, data, name, object }
+
+
+module.exports = { id, data, name, object, base58FromBuffer }
