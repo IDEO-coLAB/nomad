@@ -4,11 +4,13 @@ const Node = require('./src/sensor')
 const node = new Node()
 
 const createMessage = () => {
-  return {
+  let obj = {
     time: `At the beep, the time is ${new Date().toString()}`,
     message: 'Hello world from the Nomad mothership',
     specialNumbers: [4, 8, 15, 16, 23, 42]
   }
+
+  return JSON.stringify(obj, null, 2))
 }
 
 let instance = null
