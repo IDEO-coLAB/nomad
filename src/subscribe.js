@@ -85,6 +85,7 @@ const getCurrentMessagesFromHeadObjectHashes = (hashesObject) => {
 
   return Promise.all(R.map((hashObject) => {
     return process(hashObject.head).then((message) => {
+      debugger
       return Promise.resolve({ name: hashObject.name, message })
     })
   }, hashesObject))
@@ -100,15 +101,17 @@ const getNewSubscriptionMessages = (subscriptions, cb) => {
   .then((headObjects) => {
     // headObject is list of {name, head}
     let heads = R.pluck('head', headObjects)
-    if (allSameMessages(previousSubscriptionHashses, headObjects)) {
+    if (allSameMessages(previousSubscriptionHashses, heads)) {
       // should we worry about returning promises, since we call a callback with new messages
       log(`${MODULE_NAME}: No new messages for any subscription`)
       return Promise.resolve()
     }
 
-    previousSubscriptionHashses = headObjects
+    previousSubscriptionHashses = heads
+    debugger
     return getCurrentMessagesFromHeadObjectHashes(headObjects)
     .then((messageObjects) => {
+      debugger
       log(`${MODULE_NAME}: About to call message handler callback`)
       cb(messageObjects)
       return Promise.resolve()
