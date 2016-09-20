@@ -12,7 +12,7 @@ const { isAtomic } = require('./utils/constants')
 const { id } = require('./utils/ipfs')
 
 const MODULE_NAME = 'SENSOR'
-const POLL_MILLIS = 1000 * 60
+const POLL_MILLIS = 1000 * 10
 
 module.exports = class Node {
   constructor () {
@@ -63,8 +63,12 @@ module.exports = class Node {
     return publishRoot(data, this)
   }
 
+  // does this need to return anything since we're using callbacks?
   subscribe (cb) {
     log(`${MODULE_NAME}: Subscribing to ${R.length(config.subscriptions)} subscriptions`)
-    return getNewSubscriptionMessages(config.subscriptions, cb)
+    getNewSubscriptionMessages(config.subscriptions, cb)
+    this.subscribePollHandle = setInterval(() => {
+      getNewSubscriptionMessages(config.subscriptions, cb)
+    }, POLL_MILLIS)
   }
 }

@@ -9,104 +9,7 @@ const ipfsUtils = require('./utils/ipfs')
 
 const MODULE_NAME = 'SUBSCRIBE'
 
-
-
-
-
-
-
-
-
-// Name resolve a single IPNS name to an IPLD object hash
-// returns a promise that resolves to IPLD object hash
-// const resolveIPNSName = (subMultihash) => {
-//   log('SUBSCRIBE: Attempting to resolve subMultihash ', subMultihash)
-
-//   // We use all settled so that we can handle failures and mark them
-//   // as disconnected subMultihashs in the node
-//   return ipfsUtils.resolve(subMultihash)
-//     .then((data) => Promise.resolve({ source: subMultihash, data }))
-//     .catch((error) => Promise.resolve({ source: subMultihash }))
-// }
-
-// name resolve a list of multihashes
-// const nameResolveMultihashes = (subscriptions) => {
-//   log('SUBSCRIBE: Attempting to resolve ' + R.length(subscriptions) + ' subscriptions')
-
-//   return Q.allSettled(R.map(nameResolveSingleMultihash, subscriptions))
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Note: expects a list of fulfilled promises
-// This is different from successfully resolved promises - These could be failures
-// const updateSubscriptionStates = (results, node) => {
-//   log('SUBSCRIBE: Handling all subscription DAG resolutions')
-//   R.forEach((connection) => {
-//     let id = connection.source
-//     node.subscriptions[id] = {
-//       connected: connection.error ? false : true,
-//       data: connection
-//     }
-//   }, R.pluck('value', results))
-//   return node
-// }
-
-// const getDataDAGsFromConnectedSubscriptionDAGs = (node) => {
-//   const subscriptions = R.filter((sub) => sub.connected , node.subscriptions)
-//   log('SUBSCRIBE: Attempting to get data DAGs for ' + R.length(R.keys(subscriptions)) + ' subscription DAGs')
-
-//   return Q.allSettled(R.map((subDAG) => {
-//     let path = subDAG.data.data.Path
-//     console.log(path)
-
-
-//     let foo
-//     const timer = new Promise((resolve, reject) => {
-//       foo = setTimeout(() => {
-//         log('timeout fired')
-//         reject()
-//       }, 5000)
-//     })
-
-
-//     // return ipfsUtils.getDAGObjectFromDAGPath(path)
-//     const resolver = ipfsUtils.getDAGObjectFromDAGPath(path)
-//       .then((data) => {
-//         console.log('got data in all settled ', data)
-//         clearTimeout(foo)
-//         return data
-//       })
-
-//     return Promise.race([timer, resolver])
-
-//   }, subscriptions))
-// }
-
-
-
-
-
-
-// for any message object in the linked list of messages, 
+// for any Nomad message object in the linked list of messages, 
 // returns base58 encoded hash for message data IPLD object
 /* For reference: Nomad stores messages as a linked list of IPLD objects. Each
    object has an empty data property and two links:
@@ -142,35 +45,75 @@ const messageDataObjectHash = (headObjectPath) => {
     })
 }
 
-
-
-// const getDataFromDataDAGs = (results, node) => {
-//   log('SUBSCRIBE: Attempting to get data from the data DAGs')
-//   console.log(results)
-
-//   const headBuffersToFetch = R.map((DAGObject) => R.pluck('hash', DAGObject.links), results)
-//   return Q.all(R.map((buffer) => ipfsUtils.getDAGDataFromBuffer(buffer), headBuffersToFetch))
-// }
-
-// only calls callback if at least one subscription has a new message
-const getNewSubscriptionMessages = (subscriptions, cb) => {
-
-  let nameToData = R.pipeP(
+// pairwise compares lists of Nomad message object hashes and returns
+// true if and only if at least one pair is different. Used to decide if 
+// any subscription has a new message. Should compare Nomad object, not referenced
+// data object, since a stream might send the same data more than once, and we 
+// should consider the same data sent a second time as a new message. The Nomad object
+// hash will be different since it hashes over a link to the previous message.
+const allSameMessages = (prevHashList, currentHashList) => {
+  if (R.isEmpty(prevHashList) || R.isEmpty(currentHashList)) {
+    return false
+  }
+  return R.all(R.equals(true), R.zipWith(R.equals, prevHashList, currentHashList))
+}
+  
+// returns a promise that resolves to list of head paths:
+// { name: <IPNS subscription name>, head: <head path>}
+// head path is /IPNS/<hash>
+const getSubscriptionHeads = (subscriptions) => {
+  log(`${MODULE_NAME}: Getting message head objects for subscriptions`)
+  let nameToLatestObjectHash = R.pipeP(
     ipfsUtils.name.resolve,
-    R.prop('Path'),
-    messageDataObjectHash,
-    ipfsUtils.object.cat
+    R.prop('Path')
   )
-
   return Promise.all(R.map((subscription) => {
-    return nameToData(subscription).then((message) => {
-      return Promise.resolve({ subscription, message })
-      })
-    }, subscriptions))
-  .then((latest) => {
-    debugger
-  })
+    return nameToLatestObjectHash(subscription)
+    .then((objectHash) => {
+      return Promise.resolve({name: subscription, head: objectHash})
+    })
+  }, subscriptions))
 }
 
+// given list of objects: {name, head} where name is IPNS subscription name
+// and hash is head message object hash, returns promise that resolves to
+// list of latest messages: {name, message}
+const getCurrentMessagesFromHeadObjectHashes = (hashesObject) => {
+  log(`${MODULE_NAME}: Getting current subscription messages`)
+
+  let process = R.pipeP(messageDataObjectHash, ipfsUtils.object.cat)
+
+  return Promise.all(R.map((hashObject) => {
+    return process(hashObject.head).then((message) => {
+      return Promise.resolve({ name: hashObject.name, message })
+    })
+  }, hashesObject))
+}
+
+let previousSubscriptionHashses = []
+// only calls callback if at least one subscription has a new message
+// returns promises, but I'm not sure if we need it to return anything,
+// maybe for error handling
+// TODO: accept err callback and call with any errors
+const getNewSubscriptionMessages = (subscriptions, cb) => {
+  getSubscriptionHeads(subscriptions)
+  .then((headObjects) => {
+    // headObject is list of {name, head}
+    let heads = R.pluck('head', headObjects)
+    if (allSameMessages(previousSubscriptionHashses, headObjects)) {
+      // should we worry about returning promises, since we call a callback with new messages
+      log(`${MODULE_NAME}: No new messages for any subscription`)
+      return Promise.resolve()
+    }
+
+    previousSubscriptionHashses = headObjects
+    return getCurrentMessagesFromHeadObjectHashes(headObjects)
+    .then((messageObjects) => {
+      log(`${MODULE_NAME}: About to call message handler callback`)
+      cb(messageObjects)
+      return Promise.resolve()
+    })
+  })
+}
 
 module.exports = { getNewSubscriptionMessages }
