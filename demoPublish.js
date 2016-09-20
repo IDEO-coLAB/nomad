@@ -3,13 +3,18 @@
 const Node = require('./src/sensor')
 const node = new Node()
 
+let instance = null
 node.prepareToPublish()
-  .then((node) => {
-    console.log('DEMO: CONNECTED!!!!')
-    setInterval(() => {
-    	node.publish(`At the beep, the time is ${new Date().toString()}. BEEEEEEEEEP`)
-    }, 60000)
-    return node.publish('Demo sensor is running')
+  .then((n) => {
+  	instance = n
+  	return instance.publishRoot('Demo sensor is running')
+  })
+  .then(() => {
+  	console.log('DEMO: CONNECTED!!!!')
+  	setInterval(() => {
+  		instance.publish(`At the beep, the time is ${new Date().toString()}. BEEEEEEEEEP`)
+  	}, 60000)
+  	return instance.publish('hello!')
   })
   .catch((e) => {
     console.log('DEMO: CONNECT ERROR!!!!', e)
