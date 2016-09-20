@@ -4,6 +4,6 @@
 
 module.exports = {
   subscriptions: [
-    "Qmf8Ps1gfrkDRXjF2vsBwEbThczvPepSzXUA3yh64aSVD6"
+    "QmZa2gmiDLVLkcUgz5oL36KTK3pL4Jf2VNkmhJWjjkNWwk"
   ]
 }
