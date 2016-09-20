@@ -10,7 +10,7 @@ const createMessage = () => {
     specialNumbers: [4, 8, 15, 16, 23, 42]
   }
 
-  return JSON.stringify(obj, null, 2))
+  return JSON.stringify(obj, null, 2)
 }
 
 let instance = null
