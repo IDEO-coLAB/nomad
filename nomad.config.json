@@ -2,8 +2,8 @@
 // "Qmf8Ps1gfrkDRXjF2vsBwEbThczvPepSzXUA3yh64aSVD6"   // does not resolve
 // "Qmc6cSnvbGUfiJaUmu5tX4AzX1HUqdrokLvDMJk5gihQ76" is a content hash
 
-module.exports = {
-  subscriptions: [
+{
+  "subscriptions": [
     "QmZa2gmiDLVLkcUgz5oL36KTK3pL4Jf2VNkmhJWjjkNWwk"
   ]
 }

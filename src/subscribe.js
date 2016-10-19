@@ -1,11 +1,8 @@
-'use strict'
-
-const multihash = require('multihashes')
 const R = require('ramda')
-const Q = require('q')
 
 const log = require('./utils/log')
 const ipfsUtils = require('./utils/ipfs')
+const NomadError = require('./utils/errors')
 
 const MODULE_NAME = 'SUBSCRIBE'
 
@@ -27,22 +24,22 @@ const MODULE_NAME = 'SUBSCRIBE'
 const messageDataObjectHash = (headObjectPath) => {
   log.info(`${MODULE_NAME}: fetching data for head object at ${headObjectPath}`)
   return ipfsUtils.object.get(headObjectPath).then((object) => {
-    let links = object.links
+    const links = object.links
     if (R.isNil(links)) {
       log.info(`${MODULE_NAME}: head object is missing a links property`)
-      throw('head object is missing links property')
+      throw new NomadError('head object is missing links property')
     }
 
-    let data = R.find(R.propEq('name', 'data'), links)
+    const data = R.find(R.propEq('name', 'data'), links)
     if (R.isNil(data)) {
       log.info(`${MODULE_NAME}: head object is missing a data link`)
-      throw('head object is missing a data link')
+      throw new NomadError('head object is missing a data link')
     }
 
     // base 58 encode. Downstream functions expect this
-    let encoded = ipfsUtils.base58FromBuffer(data.hash)
+    const encoded = ipfsUtils.base58FromBuffer(data.hash)
     return Promise.resolve(encoded)
-    })
+  })
 }
 
 // pairwise compares lists of Nomad message object hashes and returns
@@ -63,16 +60,17 @@ const allSameMessages = (prevHashList, currentHashList) => {
 // head path is /IPNS/<hash>
 const getSubscriptionHeads = (subscriptions) => {
   log.info(`${MODULE_NAME}: Getting message head objects for subscriptions`)
-  let nameToLatestObjectHash = R.pipeP(
+  const nameToLatestObjectHash = R.pipeP(
     ipfsUtils.name.resolve,
     R.prop('Path')
   )
-  return Promise.all(R.map((subscription) => {
-    return nameToLatestObjectHash(subscription)
-    .then((objectHash) => {
-      return Promise.resolve({name: subscription, head: objectHash})
-    })
-  }, subscriptions))
+  return Promise.all(
+    R.map(
+      subscription => nameToLatestObjectHash(subscription)
+      .then(objectHash => Promise.resolve({ name: subscription, head: objectHash }))
+      , subscriptions
+    )
+  )
 }
 
 // given list of objects: {name, head} where name is IPNS subscription name
@@ -81,14 +79,15 @@ const getSubscriptionHeads = (subscriptions) => {
 const getCurrentMessagesFromHeadObjectHashes = (hashesObject) => {
   log.info(`${MODULE_NAME}: Getting current subscription messages`)
 
-  let process = R.pipeP(messageDataObjectHash, ipfsUtils.object.cat)
+  const procs = R.pipeP(messageDataObjectHash, ipfsUtils.object.cat)
 
-  return Promise.all(R.map((hashObject) => {
-    return process(hashObject.head).then((message) => {
-      debugger
-      return Promise.resolve({ name: hashObject.name, message })
-    })
-  }, hashesObject))
+  return Promise.all(
+    R.map(
+      hashObject => procs(hashObject.head)
+      .then(message => Promise.resolve({ name: hashObject.name, message }))
+      , hashesObject
+    )
+  )
 }
 
 let previousSubscriptionHashses = []
@@ -100,7 +99,7 @@ const getNewSubscriptionMessages = (subscriptions, cb) => {
   getSubscriptionHeads(subscriptions)
   .then((headObjects) => {
     // headObject is list of {name, head}
-    let heads = R.pluck('head', headObjects)
+    const heads = R.pluck('head', headObjects)
     if (allSameMessages(previousSubscriptionHashses, heads)) {
       // should we worry about returning promises, since we call a callback with new messages
       log.info(`${MODULE_NAME}: No new messages for any subscription`)
@@ -108,10 +107,8 @@ const getNewSubscriptionMessages = (subscriptions, cb) => {
     }
 
     previousSubscriptionHashses = heads
-    debugger
     return getCurrentMessagesFromHeadObjectHashes(headObjects)
     .then((messageObjects) => {
-      debugger
       log.info(`${MODULE_NAME}: About to call message handler callback`)
       cb(messageObjects)
       return Promise.resolve()

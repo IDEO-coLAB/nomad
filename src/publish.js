@@ -1,10 +1,6 @@
-'use strict'
-
 const R = require('ramda')
 
 const log = require('./utils/log')
-const constants = require('./utils/constants')
-const network = require('./utils/network')
 const ipfsUtils = require('./utils/ipfs')
 
 const MODULE_NAME = 'PUBLISH'
@@ -13,11 +9,11 @@ const MODULE_NAME = 'PUBLISH'
 const initNewSensorHead = (data) => {
   log.info(`${MODULE_NAME}: Initializing a new sensor head object`)
 
-  return Promise.all([ ipfsUtils.object.create(), ipfsUtils.data.add(data) ])
+  return Promise.all([ipfsUtils.object.create(), ipfsUtils.data.add(data)])
     .then((results) => {
       const emptyDAG = R.head(results) // target
       const dataDAG = R.head(R.last(results)) // source
-      const linkName = `data`
+      const linkName = 'data'
 
       log.info(`${MODULE_NAME}: Adding '${linkName}' link to new sensor head`)
 
@@ -27,7 +23,7 @@ const initNewSensorHead = (data) => {
 
 // Link the previous sensor head to the new sensor head
 const linkNewSensorHeadToPrev = (sourceDAG, targetDAG) => {
-  const linkName = `prev`
+  const linkName = 'prev'
   log.info(`${MODULE_NAME}: Adding '${linkName}' link to new sensor head`)
 
   return ipfsUtils.object.link(sourceDAG, targetDAG, linkName)
@@ -36,16 +32,17 @@ const linkNewSensorHeadToPrev = (sourceDAG, targetDAG) => {
 // Publish the new sensor head to the network
 const publishNewSensorHead = (dag, node) => {
   log.info(`${MODULE_NAME}: Publishing new sensor head: ${dag.toJSON().Hash} with links`, dag.toJSON().Links)
+  const newNode = Object.assign({}, node)
 
   return ipfsUtils.object.put(dag)
     .then((headDAG) => {
-      node.head.DAG = headDAG
+      newNode.head.DAG = headDAG
       return ipfsUtils.name.publish(headDAG)
     })
     .then((published) => {
       // { Name: <cur node id>, Value: <new node head hash> }
-      node.head.path = `/ipfs/${published.Value}`
-      return node
+      newNode.head.path = `/ipfs/${published.Value}`
+      return newNode
     })
 }
 
@@ -65,8 +62,8 @@ const publishSensorRoot = (data, node) => {
   log.info(`${MODULE_NAME}: Publishing sensor root`)
 
   return initNewSensorHead(data)
-    .then((newDAG) => publishNewSensorHead(newDAG, node))
-    .catch((error) => Promise.reject({ PUBLISH_ROOT_ERROR: error }))
+    .then(newDAG => publishNewSensorHead(newDAG, node))
+    .catch(error => Promise.reject({ PUBLISH_ROOT_ERROR: error }))
 }
 
 // Publish new sensor data to the network
@@ -74,20 +71,21 @@ const publishSensorData = (data, node) => {
   log.info(`${MODULE_NAME}: Publishing sensor data`)
 
   return initNewSensorHead(data)
-    .then((newDAG) => linkNewSensorHeadToPrev(node.head.DAG, newDAG))
-    .then((newDAG) => publishNewSensorHead(newDAG, node))
-    .catch((error) => Promise.reject({ PUBLISH_ERROR: error }))
+    .then(newDAG => linkNewSensorHeadToPrev(node.head.DAG, newDAG))
+    .then(newDAG => publishNewSensorHead(newDAG, node))
+    .catch(error => Promise.reject({ PUBLISH_ERROR: error }))
 }
 
 // Sync the sensor object with the latest head in the network
 const syncHead = (node) => {
   log.info(`${MODULE_NAME}: Syncing sensor head with network`)
+  const newNode = Object.assign({}, node)
 
-  return resolveSensorHead(node)
+  return resolveSensorHead(newNode)
     .then((head) => {
       const hPath = head.Path
 
-      node.head.path = hPath
+      newNode.head.path = hPath
       log.info(`${MODULE_NAME}: Resolved to sensor head ${hPath}`)
 
       // Needs to be a /ipfs/ prefix, not /ipns/
@@ -97,8 +95,8 @@ const syncHead = (node) => {
     .then((headDAG) => {
       log.info(`${MODULE_NAME}: Updating sensor head with resolved network DAG object`)
 
-      node.head.DAG = headDAG
-      return node
+      newNode.head.DAG = headDAG
+      return newNode
     })
     .catch((error) => {
       log.err(`${MODULE_NAME}: Failed to sync sensor head with network`, error.message)
