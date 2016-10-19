@@ -10,6 +10,7 @@ const { getNewSubscriptionMessages } = require('./subscribe')
 const { log } = require('./utils/log')
 const { isAtomic } = require('./utils/constants')
 const { id } = require('./utils/ipfs')
+const taskQueue = require('task-queue')
 
 const MODULE_NAME = 'SENSOR'
 const POLL_MILLIS = 1000 * 10
@@ -21,6 +22,8 @@ module.exports = class Node {
     this.config = config
     this.identity = null
     this.network = { connected: false }
+    this.tasks = taskQueue.Queue({capacity: 5, concurrency: 1})
+    this.tasks.start()
 
     this.head = { DAG: null, path: null }
 
@@ -68,7 +71,13 @@ module.exports = class Node {
     log(`${MODULE_NAME}: Subscribing to ${R.length(config.subscriptions)} subscriptions`)
     getNewSubscriptionMessages(config.subscriptions, cb)
     this.subscribePollHandle = setInterval(() => {
-      getNewSubscriptionMessages(config.subscriptions, cb)
+      if (this.tasks.size() < 1) {
+        // only poll if the previous poll finished, otherwise wait until next pass
+        // through
+        this.tasks.enqueue(getNewSubscriptionMessages, {args: [config.subscriptions, cb]})
+      } else {
+        log(`skipping poll because task queue has length ${this.tasks.size()}`)
+      }
     }, POLL_MILLIS)
   }
 }

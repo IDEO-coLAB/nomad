@@ -39,6 +39,7 @@
     "ramda": "0.22.1",
     "save": "2.3.0",
     "stream-to-promise": "^2.2.0",
+    "task-queue": "^1.0.2",
     "winston": "2.2.0"
   }
 }
