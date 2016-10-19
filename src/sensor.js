@@ -4,10 +4,11 @@ const ipfsApi = require('ipfs-api')
 const R = require('ramda')
 const Q = require('q')
 const async = require('async')
+
 const config = require('./../nomad.config')
 const { syncHead, publish, publishRoot } = require('./publish')
 const { getNewSubscriptionMessages } = require('./subscribe')
-const { log } = require('./utils/log')
+const log = require('./utils/log')
 const { isAtomic } = require('./utils/constants')
 const { id } = require('./utils/ipfs')
 const taskQueue = require('task-queue')
@@ -32,22 +33,22 @@ module.exports = class Node {
   }
 
   prepareToPublish () {
-    log(`${MODULE_NAME}: Connecting sensor to the network`)
+    log.info(`${MODULE_NAME}: Connecting sensor to the network`)
 
     const connectAtomic = () => {
-      log(`${MODULE_NAME}: Connecting an atomic sensor`)
+      log.info(`${MODULE_NAME}: Connecting an atomic sensor`)
       return syncHead(this)
     }
 
     const connectComposite = () => {
-      log(`${MODULE_NAME}: Connecting a composite sensor`)
+      log.info(`${MODULE_NAME}: Connecting a composite sensor`)
       return syncHead(this)
         // .then(syncSubscriptions)
     }
 
     return id()
       .then((identity) => {
-        log(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)
+        log.info(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)
 
         this.identity = identity
         this.network.connected = true
@@ -57,18 +58,18 @@ module.exports = class Node {
   }
 
   publish (data) {
-    log(`${MODULE_NAME}: Publishing new data`)
+    log.info(`${MODULE_NAME}: Publishing new data`)
     return publish(data, this)
   }
 
   publishRoot (data) {
-    log(`${MODULE_NAME}: Publishing new root`)
+    log.info(`${MODULE_NAME}: Publishing new root`)
     return publishRoot(data, this)
   }
 
   // does this need to return anything since we're using callbacks?
   subscribe (cb) {
-    log(`${MODULE_NAME}: Subscribing to ${R.length(config.subscriptions)} subscriptions`)
+    log.info(`${MODULE_NAME}: Subscribing to ${R.length(config.subscriptions)} subscriptions`)
     getNewSubscriptionMessages(config.subscriptions, cb)
     this.subscribePollHandle = setInterval(() => {
       if (this.tasks.size() < 1) {
@@ -76,7 +77,7 @@ module.exports = class Node {
         // through
         this.tasks.enqueue(getNewSubscriptionMessages, {args: [config.subscriptions, cb]})
       } else {
-        log(`skipping poll because task queue has length ${this.tasks.size()}`)
+        log.info(`skipping poll because task queue has length ${this.tasks.size()}`)
       }
     }, POLL_MILLIS)
   }

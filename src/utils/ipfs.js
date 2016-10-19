@@ -6,7 +6,7 @@ const R = require('ramda')
 const Q = require('q')
 const streamToPromise = require('stream-to-promise')
 const { DAGLink } = require('ipfs-merkle-dag')
-const { log, logError } = require('./log')
+const log = require('./log')
 
 const ipfs = ipfsApi()
 
@@ -20,10 +20,10 @@ const extractMultihashFromPath = (path) => R.replace('\/ipfs\/', '', path)
 
 // ID Utils
 const id = () => {
-  log(`${MODULE_NAME}: Checking connection to network`)
+  log.info(`${MODULE_NAME}: Checking connection to network`)
   return ipfs.id()
     .catch((err) => {
-      logError(`${MODULE_NAME}: Failed network connection`, err.message)
+      log.err(`${MODULE_NAME}: Failed network connection`, err.message)
       return Promise.reject(err)
     })
 }
@@ -31,7 +31,7 @@ const id = () => {
 // Data Utils
 const data = {
   add: (data) => {
-    log(`${MODULE_NAME}: Getting a hash for newly added data`)
+    log.info(`${MODULE_NAME}: Getting a hash for newly added data`)
     return ipfs.add(new Buffer(data, 'utf8'))
   }
 }
@@ -39,13 +39,13 @@ const data = {
 // Name Utils
 const name = {
   resolve: (id) => {
-    log(`${MODULE_NAME}: Resolving hash ${id}`)
+    log.info(`${MODULE_NAME}: Resolving hash ${id}`)
     return ipfs.name.resolve(id)
   },
 
   publish: (dag) => {
     const hash = dag.toJSON().Hash
-    log(`${MODULE_NAME}: Publishing ${hash} via IPNS`)
+    log.info(`${MODULE_NAME}: Publishing ${hash} via IPNS`)
     return ipfs.name.publish(hash)
   }
 }
@@ -55,29 +55,29 @@ const object = {
   // Currently expect lookup to be a DAG path...generify this
   // TODO: abstract!
   get: (lookup) => {
-    log(`${MODULE_NAME}: Getting object ${lookup}`)
+    log.info(`${MODULE_NAME}: Getting object ${lookup}`)
     return ipfs.object.get(bufferFromBase58(extractMultihashFromPath(lookup)))
   },
 
   // Currently expect lookup to be a DAG path...generify this
   // TODO: abstract!
   data: (lookup) => {
-    log(`${MODULE_NAME}: Getting object data for ${lookup}`)
+    log.info(`${MODULE_NAME}: Getting object data for ${lookup}`)
     return ipfs.object.data(bufferFromBase58(extractMultihashFromPath(lookup)))
   },
 
   put: (dag) => {
-    log(`${MODULE_NAME}: Putting a DAG object`)
+    log.info(`${MODULE_NAME}: Putting a DAG object`)
     return ipfs.object.put(dag)
   },
 
   create: () => {
-    log(`${MODULE_NAME}: Creating a new DAG object`)
+    log.info(`${MODULE_NAME}: Creating a new DAG object`)
     return ipfs.object.new()
   },
 
   link: (sourceDAG, targetDAG, linkName) => {
-    log(`${MODULE_NAME}: Adding '${linkName}' link to an object`)
+    log.info(`${MODULE_NAME}: Adding '${linkName}' link to an object`)
 
     const sourceHash = sourceDAG.toJSON().Hash
     const targetHash = targetDAG.toJSON().Hash
@@ -94,7 +94,7 @@ const object = {
 
   // Currently expect DAG hash
   cat: (lookup) => {
-    log(`${MODULE_NAME}: Cat-ing ${lookup}`)
+    log.info(`${MODULE_NAME}: Cat-ing ${lookup}`)
     return ipfs.cat(lookup).then((readStream) => {
       return streamToPromise(readStream)
     })
