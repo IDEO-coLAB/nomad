@@ -3,6 +3,17 @@
 const Node = require('./src/sensor')
 const node = new Node()
 
+let messages = [
+  () => { return 'Hello world from the Nomad mothership' },
+  () => { return `At the beep, the time is ${new Date().toString()}` },
+  () => { return '4, 8, 15, 16, 23, 42' }
+]
+
+const createMessage = () => {
+  let idx = Math.floor(Math.random() * messages.length)
+  return (messages[idx]())
+}
+
 let instance = null
 node.prepareToPublish()
   .then((n) => {
@@ -12,7 +23,7 @@ node.prepareToPublish()
   .then(() => {
   	console.log('DEMO: CONNECTED!!!!')
   	setInterval(() => {
-  		instance.publish(`At the beep, the time is ${new Date().toString()}. BEEEEEEEEEP`)
+  		instance.publish(createMessage())
   	}, 60000)
   	return instance.publish('hello!')
   })
