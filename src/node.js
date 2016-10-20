@@ -31,15 +31,15 @@ module.exports = class Node {
     // this.store = {}
   }
 
-  prepareToPublish() {
+  prepareToPublish(shouldSyncHead=true) {
     log.info(`${MODULE_NAME}: Connecting sensor to the network`)
 
-    const connectAtomic = () => {
+    const syncAtomic = () => {
       log.info(`${MODULE_NAME}: Connecting an atomic sensor`)
       return syncHead(this)
     }
 
-    const connectComposite = () => {
+    const syncComposite = () => {
       log.info(`${MODULE_NAME}: Connecting a composite sensor`)
       return syncHead(this)
         // .then(syncSubscriptions)
@@ -52,7 +52,12 @@ module.exports = class Node {
         this.identity = identity
         this.isOnline = true
 
-        return this.isAtomic ? connectAtomic() : connectComposite()
+        // set node identity but don't try to sync message head from IPNS
+        if (!shouldSyncHead) {
+          return this
+        }
+
+        return this.isAtomic ? syncAtomic() : syncComposite()
       })
   }
 

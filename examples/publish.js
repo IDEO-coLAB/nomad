@@ -16,8 +16,12 @@ const createMessage = () => {
 let instance = null
 node.prepareToPublish()
   .then((n) => {
+    debugger
     instance = n
     return instance.publishRoot('Demo sensor is running')
+  })
+  .catch(() => {
+    log.err('Error publishing root message')
   })
   .then(() => {
     // console.log('DEMO: CONNECTED!!!!')
@@ -26,7 +30,8 @@ node.prepareToPublish()
     }, 60000)
     return instance.publish('hello!')
   })
-  .catch(() => {
+  .catch((err) => {
+    log.err('err')
     // console.log('DEMO: CONNECT ERROR!!!!', e)
     // console.log(e)
     // return node.publish('Hey there, Gavin!')
