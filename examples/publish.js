@@ -17,17 +17,18 @@ let instance = null
 node.prepareToPublish()
   .then((n) => {
     instance = n
+    console.log('DEMO: CONNECTED!!!!')
     return instance.publishRoot('Demo sensor is running')
   })
   .then(() => {
-    // console.log('DEMO: CONNECTED!!!!')
+    console.log('DEMO: ROOT PUBLISHED!!!!')
     setInterval(() => {
       instance.publish(createMessage())
     }, 60000)
     return instance.publish('hello!')
   })
-  .catch(() => {
-    // console.log('DEMO: CONNECT ERROR!!!!', e)
+  .catch((e) => {
+    console.log('DEMO: CONNECT ERROR!!!!', e)
     // console.log(e)
     // return node.publish('Hey there, Gavin!')
   })

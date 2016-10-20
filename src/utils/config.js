@@ -4,11 +4,14 @@ const R = require('ramda')
 
 const NomadError = require('./errors')
 
+const userConfigPath = path.resolve(__dirname, './../../nomad.json')
+const nodeHeadPath = path.resolve(__dirname, './../../repo/node-head.json')
+
 let userConfigJSON
 
 (function importUserConfig() {
   try {
-    const buffer = fs.readFileSync(path.resolve(__dirname, './../../nomad.json'))
+    const buffer = fs.readFileSync(userConfigPath)
     userConfigJSON = JSON.parse(buffer.toString())
   } catch (err) {
     throw new NomadError(err.message)
@@ -31,4 +34,8 @@ module.exports = {
   debug,
   isAtomic,
   subscriptions,
+  path: {
+    head: nodeHeadPath,
+    config: userConfigPath,
+  }
 }

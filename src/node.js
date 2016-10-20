@@ -1,9 +1,5 @@
 const R = require('ramda')
 
-// TODO: RENAME THIS TO BE LESS CONFUSING RE: CONFIG
-// const config = require('./../nomad')
-
-
 const { syncHead, publish, publishRoot } = require('./publish')
 const { getNewSubscriptionMessages } = require('./subscribe')
 const log = require('./utils/log')
@@ -26,9 +22,6 @@ module.exports = class Node {
     this.tasks.start()
 
     this.head = { DAG: null, path: null }
-
-    // TODO: decide what to do here
-    // this.store = {}
   }
 
   prepareToPublish() {
