@@ -4,9 +4,10 @@
   "description": "A Dispersed Computing Network Composed of 'Software Sensor'",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "subscribe": "node demoSubscribe.js",
-    "publish": "node demoPublish.js"
+    "lint": "eslint .",
+    "test": "DEBUG=nomad* mocha -t 60000 test/**/*.spec.js",
+    "example:sub": "DEBUG=nomad* node examples/subscribe.js",
+    "example:pub": "DEBUG=nomad* node examples/publish.js"
   },
   "repository": {
     "type": "git",
@@ -20,7 +21,8 @@
     "libp2p",
     "software",
     "sensor",
-    "nodes"
+    "nodes",
+    "nomad"
   ],
   "author": "Reid Williams <rwilliams@ideo.com>",
   "license": "MIT",
@@ -30,7 +32,11 @@
   "homepage": "https://github.com/IDEO-coLAB/nomad#readme",
   "dependencies": {
     "bs58": "3.0.0",
+    "chai": "3.5.0",
     "debug": "2.2.0",
+    "eslint": "3.8.1",
+    "eslint-config-airbnb-base": "8.0.0",
+    "eslint-plugin-import": "1.16.0",
     "ipfs-api": "6.0.3",
     "ipfs-merkle-dag": "0.6.2",
     "multihashes": "0.2.2",

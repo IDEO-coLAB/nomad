@@ -1,11 +1,9 @@
-'use strict'
-
 const bs58 = require('bs58')
 const ipfsApi = require('ipfs-api')
 const R = require('ramda')
-const Q = require('q')
 const streamToPromise = require('stream-to-promise')
 const { DAGLink } = require('ipfs-merkle-dag')
+
 const log = require('./log')
 
 const ipfs = ipfsApi()
@@ -13,10 +11,10 @@ const ipfs = ipfsApi()
 const MODULE_NAME = 'IPFS'
 
 // General Utils
-const bufferFromBase58 = (str) => new Buffer(bs58.decode(str))
+const bufferFromBase58 = str => new Buffer(bs58.decode(str))
 const base58FromBuffer = bs58.encode
 
-const extractMultihashFromPath = (path) => R.replace('\/ipfs\/', '', path)
+const extractMultihashFromPath = path => R.replace('/ipfs/', '', path)
 
 // ID Utils
 const id = () => {
@@ -30,24 +28,24 @@ const id = () => {
 
 // Data Utils
 const data = {
-  add: (data) => {
+  add: (value) => {
     log.info(`${MODULE_NAME}: Getting a hash for newly added data`)
-    return ipfs.add(new Buffer(data, 'utf8'))
-  }
+    return ipfs.add(new Buffer(value, 'utf8'))
+  },
 }
 
 // Name Utils
 const name = {
-  resolve: (id) => {
-    log.info(`${MODULE_NAME}: Resolving hash ${id}`)
-    return ipfs.name.resolve(id)
+  resolve: (hash) => {
+    log.info(`${MODULE_NAME}: Resolving hash ${hash}`)
+    return ipfs.name.resolve(hash)
   },
 
   publish: (dag) => {
     const hash = dag.toJSON().Hash
     log.info(`${MODULE_NAME}: Publishing ${hash} via IPNS`)
     return ipfs.name.publish(hash)
-  }
+  },
 }
 
 // Object Utils
@@ -95,15 +93,10 @@ const object = {
   // Currently expect DAG hash
   cat: (lookup) => {
     log.info(`${MODULE_NAME}: Cat-ing ${lookup}`)
-    return ipfs.cat(lookup).then((readStream) => {
-      return streamToPromise(readStream)
-    })
-    .then((buffer) => {
-      return buffer.toString()
-    })
-  }
+    return ipfs.cat(lookup)
+      .then(readStream => streamToPromise(readStream))
+      .then(buffer => buffer.toString())
+  },
 }
-
-
 
 module.exports = { id, data, name, object, base58FromBuffer }

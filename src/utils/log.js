@@ -1,5 +1,3 @@
-'use strict'
-
 const debug = require('debug')
 
 const log = debug('nomad')
