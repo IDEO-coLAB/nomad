@@ -74,7 +74,6 @@ module.exports = class Node {
       if (this.tasks.size() < 1) {
         // only poll if the previous poll finished, otherwise wait until next pass
         // through
-        console.log(this.subscriptions)
         this.tasks.enqueue(getNewSubscriptionMessages, { args: [this.subscriptions, cb] })
       } else {
         log.info(`skipping poll because task queue has length ${this.tasks.size()}`)

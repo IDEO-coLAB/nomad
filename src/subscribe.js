@@ -70,10 +70,11 @@ const getSubscriptionHeads = (subscriptions) => {
     ipfsUtils.name.resolve,
     R.prop('Path')
   )
+
   return Promise.all(
-    R.forEach(
+    R.map(
       subscription => nameToLatestObjectHash(subscription)
-      .then(objectHash => Promise.resolve({ name: subscription, head: objectHash }))
+        .then(objectHash => Promise.resolve({ name: subscription, head: objectHash }))
       , subscriptions
     )
   )
@@ -106,6 +107,7 @@ const getNewSubscriptionMessages = (subscriptions, cb) => {
   .then((headObjects) => {
     // headObject is list of {name, head}
     const heads = R.pluck('head', headObjects)
+
     if (allSameMessages(previousSubscriptionHashses, heads)) {
       // should we worry about returning promises, since we call a callback with new messages
       log.info(`${MODULE_NAME}: No new messages for any subscription`)
