@@ -36,6 +36,5 @@ module.exports = {
   subscriptions,
   path: {
     head: nodeHeadPath,
-    config: userConfigPath,
   }
 }

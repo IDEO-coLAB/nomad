@@ -61,8 +61,6 @@ const resolveNodeHead = (node) => {
   return ipfsUtils.name.resolve(id)
 }
 
-// API
-
 // Publish the a first sensor root object in the network
 // This will have no 'prev' link in it
 const publishNodeRoot = (data, node) => {
