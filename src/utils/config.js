@@ -1,7 +1,7 @@
 const R = require('ramda')
 
 const NomadError = require('./errors')
-const userConfig = require('./../../nomad.config')
+const userConfig = require('./../../nomad')
 
 const verifyUserConfig = function verifyUserConfig() {
   if (R.isNil(userConfig)) throw new NomadError('missing nomad.config file')
