@@ -4,10 +4,10 @@
   "description": "A Dispersed Computing Network Composed of 'Software Sensor'",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "subscribe": "node demoSubscribe.js",
-    "publish": "node demoPublish.js",
-    "lint": "eslint ."
+    "lint": "eslint . ",
+    "test": "mocha -t 60000 test/**/*.spec.js",
+    "demo:sub": "node examples/subscribe.js",
+    "demo:pub": "node examples/publish.js"
   },
   "repository": {
     "type": "git",
@@ -31,6 +31,7 @@
   "homepage": "https://github.com/IDEO-coLAB/nomad#readme",
   "dependencies": {
     "bs58": "3.0.0",
+    "chai": "3.5.0",
     "debug": "2.2.0",
     "eslint": "3.8.1",
     "eslint-config-airbnb-base": "8.0.0",

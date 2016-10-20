@@ -1,6 +1,7 @@
 const R = require('ramda')
 
-const config = require('./../nomad.config')
+// TODO: RENAME THIS TO BE LESS CONFUSING RE: CONFIG
+const config = require('./../nomad')
 const { syncHead, publish, publishRoot } = require('./publish')
 const { getNewSubscriptionMessages } = require('./subscribe')
 const log = require('./utils/log')
