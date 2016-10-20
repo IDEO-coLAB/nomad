@@ -1,10 +1,8 @@
-'use strict'
-
 class NomadError extends Error {
-  constructor (message) {
+  constructor(message) {
     super()
     Error.captureStackTrace(this, this.constructor)
-    this.name = `NomadError`
+    this.name = 'NomadError'
     this.message = `${message}`
   }
 }
