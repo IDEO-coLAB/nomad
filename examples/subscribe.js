@@ -1,4 +1,4 @@
-const Node = require('./../src/sensor')
+const Node = require('./../src/node')
 
 const node = new Node()
 

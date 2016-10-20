@@ -17,6 +17,6 @@ function checkAtomicity() {
 verifyUserConfig()
 
 module.exports = {
-  debug: R.exists(process.env.DEBUG) ? Boolean(process.env.DEBUG) : false,
+  debug: R.isNil(process.env.DEBUG) ? false : Boolean(process.env.DEBUG),
   isAtomic: checkAtomicity(),
 }

@@ -4,10 +4,10 @@
   "description": "A Dispersed Computing Network Composed of 'Software Sensor'",
   "main": "src/index.js",
   "scripts": {
-    "lint": "eslint . ",
+    "lint": "eslint .",
     "test": "mocha -t 60000 test/**/*.spec.js",
-    "demo:sub": "node examples/subscribe.js",
-    "demo:pub": "node examples/publish.js"
+    "example:sub": "node examples/subscribe.js",
+    "example:pub": "node examples/publish.js"
   },
   "repository": {
     "type": "git",
@@ -21,7 +21,8 @@
     "libp2p",
     "software",
     "sensor",
-    "nodes"
+    "nodes",
+    "nomad"
   ],
   "author": "Reid Williams <rwilliams@ideo.com>",
   "license": "MIT",

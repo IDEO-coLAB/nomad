@@ -1,6 +1,6 @@
 const expect = require('chai').expect
 
-describe('Sensor:', () => {
+describe('Node:', () => {
   before(() => {})
   after(() => {})
 
