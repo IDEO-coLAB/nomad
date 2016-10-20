@@ -71,7 +71,7 @@ const getSubscriptionHeads = (subscriptions) => {
     R.prop('Path')
   )
   return Promise.all(
-    R.map(
+    R.forEach(
       subscription => nameToLatestObjectHash(subscription)
       .then(objectHash => Promise.resolve({ name: subscription, head: objectHash }))
       , subscriptions

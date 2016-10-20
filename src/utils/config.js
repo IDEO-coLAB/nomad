@@ -1,22 +1,34 @@
+const fs = require('fs')
+const path = require('path')
 const R = require('ramda')
 
 const NomadError = require('./errors')
-const userConfig = require('./../../nomad')
 
-const verifyUserConfig = function verifyUserConfig() {
-  if (R.isNil(userConfig)) throw new NomadError('missing nomad.config file')
-}
+let userConfigJSON
 
-function checkAtomicity() {
-  const subscriptions = userConfig.subscriptions
-  if (!subscriptions) return true
-  if (R.isEmpty(subscriptions)) return true
+(function importUserConfig() {
+  try {
+    const buffer = fs.readFileSync(path.resolve(__dirname, './../../nomad.json'))
+    userConfigJSON = JSON.parse(buffer.toString())
+  } catch (err) {
+    throw new NomadError(err.message)
+  }
+}())
+
+const isAtomic = (function checkAtomicity() {
+  const subscriptions = userConfigJSON.subscriptions
+  if (R.isNil(subscriptions)) return true
+  if (!R.isArrayLike(subscriptions)) return true
+  if (R.isArrayLike(subscriptions) && R.isEmpty(subscriptions)) return true
   return false
-}
+}())
 
-verifyUserConfig()
+const debug = R.equals(typeof process.env.DEBUG, 'boolean') ? Boolean(process.env.DEBUG) : false
+
+const subscriptions = isAtomic ? [] : userConfigJSON.subscriptions
 
 module.exports = {
-  debug: R.isNil(process.env.DEBUG) ? false : Boolean(process.env.DEBUG),
-  isAtomic: checkAtomicity(),
+  debug,
+  isAtomic,
+  subscriptions,
 }

@@ -5,9 +5,9 @@
   "main": "src/index.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "mocha -t 60000 test/**/*.spec.js",
-    "example:sub": "node examples/subscribe.js",
-    "example:pub": "node examples/publish.js"
+    "test": "DEBUG=nomad* mocha -t 60000 test/**/*.spec.js",
+    "example:sub": "DEBUG=nomad* node examples/subscribe.js",
+    "example:pub": "DEBUG=nomad* node examples/publish.js"
   },
   "repository": {
     "type": "git",

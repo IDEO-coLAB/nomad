@@ -1,12 +1,14 @@
+// const R = require('ramda')
 const expect = require('chai').expect
 
-describe('Node:', () => {
-  before(() => {})
-  after(() => {})
+const Node = require('./../src/node')
 
-  describe('something:', () => {
-    it('food', () => {
-      expect(1).to.eql(1)
+describe('Node:', () => {
+  let node
+
+  describe('constructor:', () => {
+    it('success', () => {
+      node = new Node()
     })
   })
 })
