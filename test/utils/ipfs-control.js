@@ -3,7 +3,7 @@ const path = require('path')
 const log = require('./../../src/utils/log')
 
 const ipfs = 'ipfs'
-const repoPath = `${path.resolve(__dirname)}/.ipfs`
+const repoPath = `${path.resolve(__dirname)}/.ipfs-nomad-test`
 
 let ipfsDaemonHandle = null
 
