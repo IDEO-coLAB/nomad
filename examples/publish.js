@@ -31,7 +31,6 @@ node.prepareToPublish()
     }, 60000)
     return instance.publish('hello!')
   })
-<<<<<<< HEAD
   .catch((err) => {
     log.err('err')
     // console.log('DEMO: CONNECT ERROR!!!!', e)
