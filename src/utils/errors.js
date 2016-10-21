@@ -1,10 +1,24 @@
+const log = require('./log')
+
 class NomadError extends Error {
   constructor(message) {
     super()
     Error.captureStackTrace(this, this.constructor)
-    this.name = 'NomadError'
     this.message = `${message}`
+  }
+
+  toErrorString() {
+  	return `${this.constructor.name}: ${this.message}`
   }
 }
 
-module.exports = NomadError
+class IPFSErrorDaemonOffline extends NomadError {
+  constructor() {
+    super('IPFS daemon offline')
+  }
+}
+
+module.exports = {
+  NomadError,
+  IPFSErrorDaemonOffline,
+}

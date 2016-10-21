@@ -20,21 +20,25 @@ node.prepareToPublish()
     console.log('DEMO: CONNECTED!!!!')
     return instance.publishRoot('Demo sensor is running')
   })
-  .then(() => {
-    console.log('DEMO: ROOT PUBLISHED!!!!')
-    setInterval(() => {
-      instance.publish(createMessage())
-    }, 60000)
-    return instance.publish('hello!')
-  })
-  .catch((e) => {
-    console.log('DEMO: CONNECT ERROR!!!!', e)
-    // console.log(e)
-    // return node.publish('Hey there, Gavin!')
-  })
-  .then(() => {
-    // console.log('DEMO: PUBLLISHED!!!!', d)
-  })
-  .catch(() => {
-    // console.log('DEMO: PUBLISH ERROR!!!!', e)
-  })
+  // .catch(() => {
+  //   log.err('Error publishing root message')
+  // })
+  // .then(() => {
+  //   console.log('DEMO: ROOT PUBLISHED!!!!')
+  //   setInterval(() => {
+  //     instance.publish(createMessage())
+  //   }, 60000)
+  //   return instance.publish('hello!')
+  // })
+  // .catch((err) => {
+  //   // log.err('err')
+  //   // console.log('DEMO: CONNECT ERROR!!!!', e)
+  //   // console.log(e)
+  //   // return node.publish('Hey there, Gavin!')
+  // })
+  // .then(() => {
+  //   // console.log('DEMO: PUBLLISHED!!!!', d)
+  // })
+  // .catch(() => {
+  //   // console.log('DEMO: PUBLISH ERROR!!!!', e)
+  // })
