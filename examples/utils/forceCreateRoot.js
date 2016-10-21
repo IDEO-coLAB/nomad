@@ -1,4 +1,4 @@
-// Command line script to forcibly create a nomad message and publish under the 
+// Command line script to forcibly create a nomad message and publish under the
 // node's IPNS name regardless of what IPNS currently points to
 
 const Node = require('./../node')
@@ -18,4 +18,4 @@ node.prepareToPublish(false) // prepare identity without syncing message head
   .catch((err) => {
   	log.err(err)
   })
-  
+

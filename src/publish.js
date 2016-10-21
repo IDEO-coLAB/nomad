@@ -53,14 +53,6 @@ const publishNewNodeHead = (dag, node) => {
     })
 }
 
-// Resolve the current sensor head based on the sensor ipfs id
-const resolveNodeHead = (node) => {
-  const id = node.identity.ID
-  log.info(`${MODULE_NAME}: Resolving sensor head: ${id} via IPNS`)
-
-  return ipfsUtils.name.resolve(id)
-}
-
 // Publish the a first sensor root object in the network
 // This will have no 'prev' link in it
 const publishNodeRoot = (data, node) => {
@@ -81,31 +73,15 @@ const publishNodeData = (data, node) => {
     .catch(error => Promise.reject({ PUBLISH_ERROR: error }))
 }
 
-// Sync the sensor object with the latest head in the network
-const syncHead = (node) => {
-  log.info(`${MODULE_NAME}: Syncing sensor head with network`)
+// Set the local sensor head from disk on node bootup
+const setHead = (node) => {
+  log.info(`${MODULE_NAME}: Reading sensor head from disk on boot up`)
 
-  return resolveNodeHead(node)
-    .then((head) => {
-      const hPath = head.Path
+  const buffer = fs.readFileSync(NODE_HEAD_PATH)
+  const curNodeHead = JSON.parse(buffer.toString())
+  node.head = curNodeHead
 
-      node.head.path = hPath
-      log.info(`${MODULE_NAME}: Resolved to sensor head ${hPath}`)
-
-      // Needs to be a /ipfs/ prefix, not /ipns/
-      // TODO: better sanity checking
-      return ipfsUtils.object.get(hPath)
-    })
-    .then((headDAG) => {
-      log.info(`${MODULE_NAME}: Updating sensor head with resolved network DAG object`)
-
-      node.head.DAG = headDAG
-      return node
-    })
-    .catch((error) => {
-      log.err(`${MODULE_NAME}: Failed to sync sensor head with network`, error.message)
-      return Promise.reject({ syncHead: error })
-    })
+  return Promise.resolve(node)
 }
 
 // API
@@ -113,5 +89,5 @@ const syncHead = (node) => {
 module.exports = {
   publish: publishNodeData,
   publishRoot: publishNodeRoot,
-  syncHead,
+  setHead,
 }
