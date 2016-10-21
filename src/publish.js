@@ -74,14 +74,13 @@ const publishNodeData = (data, node) => {
 }
 
 // Set the local sensor head from disk on node bootup
+// FIXME, move to node.js as class method
 const setHead = (node) => {
   log.info(`${MODULE_NAME}: Reading sensor head from disk on boot up`)
 
   const buffer = fs.readFileSync(NODE_HEAD_PATH)
   const curNodeHead = JSON.parse(buffer.toString())
   node.head = curNodeHead
-
-  return Promise.resolve(node)
 }
 
 // API

@@ -25,10 +25,10 @@ const mapError = (err) => {
     case IPFSConnectionRefusedErrorCode:
       const newError = new errors.IPFSErrorDaemonOffline()
       log.err(newError.toErrorString())
-      return newError
+      return Promise.reject(newError)
     default:
       log.err(`${MODULE_NAME}: Unhandled IPFS error, ${err.message}`)
-      return err
+      return Promise.reject(err)
   }
 }
 
