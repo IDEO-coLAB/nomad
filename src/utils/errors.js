@@ -2,8 +2,11 @@ class NomadError extends Error {
   constructor(message) {
     super()
     Error.captureStackTrace(this, this.constructor)
-    this.name = 'NomadError'
     this.message = `${message}`
+  }
+
+  errorString() {
+  	return `${this.constructor.name}: ${this.message}`
   }
 }
 
