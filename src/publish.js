@@ -1,6 +1,5 @@
 const fs = require('fs')
 const R = require('ramda')
-const path = require('path')
 
 const log = require('./utils/log')
 const config = require('./utils/config')

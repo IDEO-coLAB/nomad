@@ -13,7 +13,11 @@ const POLL_MILLIS = 1000 * 10
 
 const fatalErrors = [errors.IPFSErrorDaemonOffline]
 
-const instanceOfFatalErrors = (err) => !R.isNil(R.find((errorClass) => err instanceof errorClass), fatalErrors)
+const instanceOfFatalErrors = err => !R.isNil(
+  R.find(errorClass => err instanceof errorClass)
+  , fatalErrors
+)
+
 
 const passErrorOrDie = (err) => {
   if (instanceOfFatalErrors(err)) {

@@ -1,5 +1,3 @@
-const log = require('./log')
-
 class NomadError extends Error {
   constructor(message) {
     super()
@@ -8,7 +6,7 @@ class NomadError extends Error {
   }
 
   toErrorString() {
-  	return `${this.constructor.name}: ${this.message}`
+    return `${this.constructor.name}: ${this.message}`
   }
 }
 

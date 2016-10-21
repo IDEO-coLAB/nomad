@@ -8,10 +8,10 @@ const messages = [
   () => '4, 8, 15, 16, 23, 42',
 ]
 
-const createMessage = () => {
-  const idx = Math.floor(Math.random() * messages.length)
-  return (messages[idx]())
-}
+// const createMessage = () => {
+//   const idx = Math.floor(Math.random() * messages.length)
+//   return (messages[idx]())
+// }
 
 let instance = null
 node.prepareToPublish()

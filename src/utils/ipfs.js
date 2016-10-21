@@ -21,9 +21,11 @@ const IPFSConnectionRefusedErrorCode = 'ECONNREFUSED'
 
 // replaces or passes through certain errors
 const mapError = (err) => {
-  switch(err.code) {
+  let newError
+
+  switch (err.code) {
     case IPFSConnectionRefusedErrorCode:
-      const newError = new errors.IPFSErrorDaemonOffline()
+      newError = new errors.IPFSErrorDaemonOffline()
       log.err(newError.toErrorString())
       return Promise.reject(newError)
     default:

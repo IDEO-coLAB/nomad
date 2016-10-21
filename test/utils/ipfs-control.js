@@ -8,31 +8,29 @@ const repoPath = `${path.resolve(__dirname)}/.ipfs-nomad-test`
 let ipfsDaemonHandle = null
 
 function execAndLog(command, options) {
-	log.info(child.execSync(command, options).toString())
+  log.info(child.execSync(command, options).toString())
 }
 
 function initIPFS() {
-	execAndLog(`${ipfs} init`, {env: {'IPFS_PATH': repoPath}})
+  execAndLog(`${ipfs} init`, { env: { IPFS_PATH: repoPath } })
 }
 
 function cleanIPFS() {
-	execAndLog(`rm -rf ${repoPath}`)
+  execAndLog(`rm -rf ${repoPath}`)
 }
 
 function startIPFSDaemon() {
-	ipfsDaemonHandle = child.exec(`${ipfs} daemon`, {env: {'IPFS_PATH': repoPath}})
+  ipfsDaemonHandle = child.exec(`${ipfs} daemon`, { env: { IPFS_PATH: repoPath } })
 }
 
 function stopIPFSDaemon() {
-	ipfsDaemonHandle.kill()
-	ipfsDaemonHandle = null
+  ipfsDaemonHandle.kill()
+  ipfsDaemonHandle = null
 }
 
 module.exports = {
-	initIPFS,
-	cleanIPFS,
-	startIPFSDaemon,
-	stopIPFSDaemon
+  initIPFS,
+  cleanIPFS,
+  startIPFSDaemon,
+  stopIPFSDaemon,
 }
-
-
