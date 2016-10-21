@@ -18,18 +18,20 @@ node.prepareToPublish()
   .then((n) => {
     debugger
     instance = n
+    console.log('DEMO: CONNECTED!!!!')
     return instance.publishRoot('Demo sensor is running')
   })
   .catch(() => {
     log.err('Error publishing root message')
   })
   .then(() => {
-    // console.log('DEMO: CONNECTED!!!!')
+    console.log('DEMO: ROOT PUBLISHED!!!!')
     setInterval(() => {
       instance.publish(createMessage())
     }, 60000)
     return instance.publish('hello!')
   })
+<<<<<<< HEAD
   .catch((err) => {
     log.err('err')
     // console.log('DEMO: CONNECT ERROR!!!!', e)
