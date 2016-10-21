@@ -1,6 +1,6 @@
 const R = require('ramda')
 
-const { syncHead, publish, publishRoot } = require('./publish')
+const { setHead, publish, publishRoot } = require('./publish')
 const { getNewSubscriptionMessages } = require('./subscribe')
 const log = require('./utils/log')
 const config = require('./utils/config')
@@ -24,17 +24,17 @@ module.exports = class Node {
     this.head = { DAG: null, path: null }
   }
 
-  prepareToPublish(shouldSyncHead=true) {
+  prepareToPublish(shouldSetHead=true) {
     log.info(`${MODULE_NAME}: Connecting sensor to the network`)
 
     const syncAtomic = () => {
       log.info(`${MODULE_NAME}: Connecting an atomic sensor`)
-      return syncHead(this)
+      return setHead(this)
     }
 
     const syncComposite = () => {
       log.info(`${MODULE_NAME}: Connecting a composite sensor`)
-      return syncHead(this)
+      return setHead(this)
         // .then(syncSubscriptions)
     }
 
@@ -46,7 +46,7 @@ module.exports = class Node {
         this.isOnline = true
 
         // set node identity but don't try to sync message head from IPNS
-        if (!shouldSyncHead) {
+        if (!shouldSetHead) {
           return this
         }
 

@@ -1,3 +1,5 @@
+const log = require('./log')
+
 class NomadError extends Error {
   constructor(message) {
     super()
@@ -5,9 +7,18 @@ class NomadError extends Error {
     this.message = `${message}`
   }
 
-  errorString() {
+  toErrorString() {
   	return `${this.constructor.name}: ${this.message}`
   }
 }
 
-module.exports = NomadError
+class IPFSErrorDaemonOffline extends NomadError {
+  constructor() {
+    super('IPFS daemon offline')
+  }
+}
+
+module.exports = {
+  NomadError,
+  IPFSErrorDaemonOffline,
+}
