@@ -5,10 +5,23 @@ const { getNewSubscriptionMessages } = require('./subscribe')
 const log = require('./utils/log')
 const config = require('./utils/config')
 const { id } = require('./utils/ipfs')
+const errors = require('./utils/errors')
 const taskQueue = require('task-queue')
 
 const MODULE_NAME = 'SENSOR'
 const POLL_MILLIS = 1000 * 10
+
+const fatalErrors = [errors.IPFSErrorDaemonOffline]
+
+const instanceOfFatalErrors = (err) => !R.isNil(R.find((errorClass) => err instanceof errorClass), fatalErrors)
+
+const passErrorOrDie = (err) => {
+  if (instanceOfFatalErrors(err)) {
+    process.exit(1)
+  }
+
+  return Promise.reject(err)
+}
 
 module.exports = class Node {
   constructor() {
@@ -24,19 +37,9 @@ module.exports = class Node {
     this.head = { DAG: null, path: null }
   }
 
-  prepareToPublish(shouldSetHead=true) {
+  prepareToPublish() {
     log.info(`${MODULE_NAME}: Connecting sensor to the network`)
-
-    const syncAtomic = () => {
-      log.info(`${MODULE_NAME}: Connecting an atomic sensor`)
-      return setHead(this)
-    }
-
-    const syncComposite = () => {
-      log.info(`${MODULE_NAME}: Connecting a composite sensor`)
-      return setHead(this)
-        // .then(syncSubscriptions)
-    }
+    setHead(this)
 
     return id()
       .then((identity) => {
@@ -44,28 +47,23 @@ module.exports = class Node {
 
         this.identity = identity
         this.isOnline = true
-
-        // set node identity but don't try to sync message head from IPNS
-        if (!shouldSetHead) {
-          return this
-        }
-
-        return this.isAtomic ? syncAtomic() : syncComposite()
+        return this
       })
+      .catch(passErrorOrDie)
   }
 
   publish(data) {
     log.info(`${MODULE_NAME}: Publishing new data`)
-    return publish(data, this)
+    return publish(data, this).catch(passErrorOrDie)
   }
 
   publishRoot(data) {
     log.info(`${MODULE_NAME}: Publishing new root`)
-    return publishRoot(data, this)
+    return publishRoot(data, this).catch(passErrorOrDie)
   }
 
   // does this need to return anything since we're using callbacks?
-  subscribe(cb) {
+  onMessage(cb) {
     log.info(`${MODULE_NAME}: Subscribing to ${R.length(this.subscriptions)} subscriptions`)
     getNewSubscriptionMessages(this.subscriptions, cb)
     this.subscribePollHandle = setInterval(() => {
