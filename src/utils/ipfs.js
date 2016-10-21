@@ -17,10 +17,12 @@ const base58FromBuffer = bs58.encode
 
 const extractMultihashFromPath = path => R.replace('/ipfs/', '', path)
 
+const IPFSConnectionRefusedErrorCode = 'ECONNREFUSED'
+
 // replaces or passes through certain errors
 const mapError = (err) => {
   switch(err.code) {
-    case 'ECONNREFUSED':
+    case IPFSConnectionRefusedErrorCode:
       const newError = new errors.IPFSErrorDaemonOffline()
       log.err(newError.toErrorString())
       return newError
