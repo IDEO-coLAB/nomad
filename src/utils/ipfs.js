@@ -5,6 +5,7 @@ const streamToPromise = require('stream-to-promise')
 const { DAGLink } = require('ipfs-merkle-dag')
 
 const log = require('./log')
+const errors = require('./errors')
 
 const ipfs = ipfsApi()
 
