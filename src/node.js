@@ -13,14 +13,20 @@ const POLL_MILLIS = 1000 * 10
 
 const fatalErrors = [errors.IPFSErrorDaemonOffline]
 
-const instanceOfFatalErrors = err => !R.isNil(
-  R.find(errorClass => err instanceof errorClass)
-  , fatalErrors
-)
-
-
+const instanceOfFatalErrors = err => {
+  const matchedErrors = R.find(errorClass => err instanceof errorClass, fatalErrors)
+  return !R.isNil(matchedErrors)
+}
+  
 const passErrorOrDie = (err) => {
+  if (err instanceof errors.NomadError) {
+    log.err(err.toErrorString())
+  } else {
+    log.err(err)
+  }
+
   if (instanceOfFatalErrors(err)) {
+    log.err('exiting')
     process.exit(1)
   }
 

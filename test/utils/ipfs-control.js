@@ -12,6 +12,7 @@ function execAndLog(command, options) {
 }
 
 function initIPFS() {
+  log.info(`Creating test IPFS repo at ${repoPath}`)
   execAndLog(`${ipfs} init`, { env: { IPFS_PATH: repoPath } })
 }
 

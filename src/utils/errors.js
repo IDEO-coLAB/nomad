@@ -6,7 +6,7 @@ class NomadError extends Error {
   }
 
   toErrorString() {
-    return `${this.constructor.name}: ${this.message}`
+    return `${this.constructor.name}: ${this.message}\n${this.stack}`
   }
 }
 

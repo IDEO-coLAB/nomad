@@ -1,4 +1,3 @@
 node_modules/
 npm*.log
 npm*.debug
-repo/node-head.json
