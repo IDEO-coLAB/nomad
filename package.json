@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "DEBUG=nomad* mocha -t 60000 test/**/*.spec.js",
+    "test": "DEBUG=nomad* mocha -t 120000 test/**/*.spec.js",
     "example:sub": "DEBUG=nomad* node examples/subscribe.js",
     "example:pub": "DEBUG=nomad* node examples/publish.js"
   },

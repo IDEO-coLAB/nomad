@@ -29,9 +29,14 @@ function stopIPFSDaemon() {
   ipfsDaemonHandle = null
 }
 
+function getConfig() {
+  return JSON.parse(child.execSync('ipfs config show', { env: { IPFS_PATH: repoPath } }).toString())
+}
+
 module.exports = {
   initIPFS,
   cleanIPFS,
   startIPFSDaemon,
   stopIPFSDaemon,
+  getConfig,
 }
