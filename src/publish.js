@@ -1,10 +1,10 @@
 const fs = require('fs')
 const R = require('ramda')
-const path = require('path')
 
 const log = require('./utils/log')
 const config = require('./utils/config')
 const ipfsUtils = require('./utils/ipfs')
+const errors = require('./utils/errors')
 
 const MODULE_NAME = 'PUBLISH'
 const NODE_HEAD_PATH = config.path.head
@@ -19,7 +19,7 @@ const initNewNodeHead = (data) => {
       const dataDAG = R.head(R.last(results)) // source
       const linkName = 'data'
 
-      log.info(`${MODULE_NAME}: Adding '${linkName}' link to new sensor head`)
+      log.info(`${MODULE_NAME}: Adding data link to new sensor head`)
 
       return ipfsUtils.object.link(dataDAG.node, emptyDAG, 'data')
     })
@@ -28,7 +28,7 @@ const initNewNodeHead = (data) => {
 // Link the previous sensor head to the new sensor head
 const linkNewNodeHeadToPrev = (sourceDAG, targetDAG) => {
   const linkName = 'prev'
-  log.info(`${MODULE_NAME}: Adding '${linkName}' link to new sensor head`)
+  log.info(`${MODULE_NAME}: Adding prev link to new sensor head`)
 
   return ipfsUtils.object.link(sourceDAG, targetDAG, linkName)
 }
@@ -70,18 +70,22 @@ const publishNodeData = (data, node) => {
   return initNewNodeHead(data)
     .then(newDAG => linkNewNodeHeadToPrev(node.head.DAG, newDAG))
     .then(newDAG => publishNewNodeHead(newDAG, node))
-    .catch(error => Promise.reject({ PUBLISH_ERROR: error }))
+    // .catch(error => {
+    //   log.err(`${MODULE_NAME}: ${error}`)
+    //   const errorObj = new NomadError(error)
+    //   log.err(errorObj.toErrorString())
+    //   return Promise.reject(errorObj)
+    // })
 }
 
 // Set the local sensor head from disk on node bootup
+// FIXME, move to node.js as class method
 const setHead = (node) => {
   log.info(`${MODULE_NAME}: Reading sensor head from disk on boot up`)
 
   const buffer = fs.readFileSync(NODE_HEAD_PATH)
   const curNodeHead = JSON.parse(buffer.toString())
   node.head = curNodeHead
-
-  return Promise.resolve(node)
 }
 
 // API

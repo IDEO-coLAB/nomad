@@ -1,12 +1,12 @@
 // Command line script to forcibly create a nomad message and publish under the
 // node's IPNS name regardless of what IPNS currently points to
 
-const Node = require('./../node')
-const log = require('./log')
+const Node = require('./../../src/node')
+const log = require('./../../src/utils/log')
 
 const node = new Node()
 
-const message = "Assets to assets, dist to dist"
+const message = 'Assets to assets, dist to dist'
 
 let instance = null
 node.prepareToPublish(false) // prepare identity without syncing message head
@@ -16,6 +16,5 @@ node.prepareToPublish(false) // prepare identity without syncing message head
     return instance.publishRoot(message)
   })
   .catch((err) => {
-  	log.err(err)
+    log.err(err)
   })
-

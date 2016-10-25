@@ -36,5 +36,5 @@ module.exports = {
   subscriptions,
   path: {
     head: nodeHeadPath,
-  }
+  },
 }
