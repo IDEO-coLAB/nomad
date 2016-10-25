@@ -21,9 +21,11 @@ const IPFSConnectionRefusedErrorCode = 'ECONNREFUSED'
 
 // replaces or passes through certain errors
 const mapError = (err) => {
-  switch(err.code) {
+  let newError
+
+  switch (err.code) {
     case IPFSConnectionRefusedErrorCode:
-      const newError = new errors.IPFSErrorDaemonOffline()
+      newError = new errors.IPFSErrorDaemonOffline()
       log.err(newError.toErrorString())
       return Promise.reject(newError)
     default:
@@ -56,7 +58,12 @@ const name = {
   publish: (dag) => {
     const hash = dag.toJSON().Hash
     log.info(`${MODULE_NAME}: Publishing ${hash} via IPNS`)
-    return ipfs.name.publish(hash).catch(mapError)
+    return ipfs.name.publish(hash)
+    .then(function(res) {
+      log.info(`${MODULE_NAME}: Successfully published via IPNS`)
+      return Promise.resolve(res)
+    })
+    .catch(mapError)
   },
 }
 
@@ -88,6 +95,14 @@ const object = {
 
   link: (sourceDAG, targetDAG, linkName) => {
     log.info(`${MODULE_NAME}: Adding '${linkName}' link to an object`)
+
+    if (R.isNil(sourceDAG)) {
+      return Promise.reject(new errors.NomadError(`MODULE_NAME: sourceDAG was null`))
+    }
+
+    if (R.isNil(targetDAG)) {
+      return Promise.reject(new errors.NomadError(`MODULE_NAME: targetDAG was null`))
+    }
 
     const sourceHash = sourceDAG.toJSON().Hash
     const targetHash = targetDAG.toJSON().Hash
