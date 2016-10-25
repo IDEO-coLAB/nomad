@@ -1,15 +1,13 @@
-// Sample interface
+const Node = require('./../src/node')
 
-const Node = require('./src/sensor')
 const node = new Node()
 
-let processMessages = (messages) => {
+const processMessages = () => {
   console.log('MESSAGES RECEIVED:\n', messages)
+  // do something with the messages
 }
 
 // subscribes to all sensors in subscriptions list, calls processMessages
 // callback when any subscription has a new message. Also calls processMessages
 // once with latest message.
-node.subscribe(processMessages)
-
-
+node.onMessage(processMessages)
