@@ -1,18 +1,37 @@
 const R = require('ramda')
 
-// TODO: RENAME THIS TO BE LESS CONFUSING RE: CONFIG
-// const config = require('./../nomad')
-
-
-const { syncHead, publish, publishRoot } = require('./publish')
+const { setHead, publish, publishRoot } = require('./publish')
 const { getNewSubscriptionMessages } = require('./subscribe')
 const log = require('./utils/log')
 const config = require('./utils/config')
 const { id } = require('./utils/ipfs')
+const errors = require('./utils/errors')
 const taskQueue = require('task-queue')
 
 const MODULE_NAME = 'SENSOR'
 const POLL_MILLIS = 1000 * 10
+
+const fatalErrors = [errors.IPFSErrorDaemonOffline]
+
+const instanceOfFatalErrors = err => {
+  const matchedErrors = R.find(errorClass => err instanceof errorClass, fatalErrors)
+  return !R.isNil(matchedErrors)
+}
+  
+const passErrorOrDie = (err) => {
+  if (err instanceof errors.NomadError) {
+    log.err(err.toErrorString())
+  } else {
+    log.err(err)
+  }
+
+  if (instanceOfFatalErrors(err)) {
+    log.err('exiting')
+    process.exit(1)
+  }
+
+  return Promise.reject(err)
+}
 
 module.exports = class Node {
   constructor() {
@@ -26,24 +45,11 @@ module.exports = class Node {
     this.tasks.start()
 
     this.head = { DAG: null, path: null }
-
-    // TODO: decide what to do here
-    // this.store = {}
   }
 
   prepareToPublish() {
     log.info(`${MODULE_NAME}: Connecting sensor to the network`)
-
-    const connectAtomic = () => {
-      log.info(`${MODULE_NAME}: Connecting an atomic sensor`)
-      return syncHead(this)
-    }
-
-    const connectComposite = () => {
-      log.info(`${MODULE_NAME}: Connecting a composite sensor`)
-      return syncHead(this)
-        // .then(syncSubscriptions)
-    }
+    setHead(this)
 
     return id()
       .then((identity) => {
@@ -51,23 +57,23 @@ module.exports = class Node {
 
         this.identity = identity
         this.isOnline = true
-
-        return this.isAtomic ? connectAtomic() : connectComposite()
+        return this
       })
+      .catch(passErrorOrDie)
   }
 
   publish(data) {
     log.info(`${MODULE_NAME}: Publishing new data`)
-    return publish(data, this)
+    return publish(data, this).catch(passErrorOrDie)
   }
 
   publishRoot(data) {
     log.info(`${MODULE_NAME}: Publishing new root`)
-    return publishRoot(data, this)
+    return publishRoot(data, this).catch(passErrorOrDie)
   }
 
   // does this need to return anything since we're using callbacks?
-  subscribe(cb) {
+  onMessage(cb) {
     log.info(`${MODULE_NAME}: Subscribing to ${R.length(this.subscriptions)} subscriptions`)
     getNewSubscriptionMessages(this.subscriptions, cb)
     this.subscribePollHandle = setInterval(() => {
