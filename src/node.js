@@ -42,14 +42,14 @@ const instanceOfFatalErrors = (err) => {
 //
 const passErrorOrDie = (err) => {
   if (err instanceof errors.NomadError) {
-    log.err(err.toErrorString())
+    log.err(`${MODULE_NAME}: ${err.toErrorString()}`)
   } else {
-    log.err(err)
+    log.err(`${MODULE_NAME}: ${err}`)
   }
 
   if (instanceOfFatalErrors(err)) {
-    log.err(`fatal error: ${err.message}`)
-    log.err('exiting')
+    log.err(`${MODULE_NAME}: fatal error`)
+    log.err(`${MODULE_NAME}: exiting`)
     process.exit(1)
   }
 

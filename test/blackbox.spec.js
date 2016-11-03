@@ -54,6 +54,7 @@ describe('Black box test of publish then subscribe:', () => {
   })
 
   describe('subscribe: ', () => {
+    // TODO: attach the handler earlier and ensure all messages are in the queue later
     it('should receive all of the latest incoming messages when subscribing', (done) => {
       node.onMessage((err, messages) => {
         expect(err).to.not.exist

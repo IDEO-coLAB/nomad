@@ -3,7 +3,7 @@ const R = require('ramda')
 
 const log = require('./utils/log')
 const ipfsUtils = require('./utils/ipfs')
-const NomadError = require('./utils/errors')
+const { NomadError } = require('./utils/errors')
 const messageStore = require('./message-store')
 
 const MODULE_NAME = 'SUBSCRIBE'
@@ -70,10 +70,12 @@ const getHeadObjectsForSubscriptions = (subIds) => {
 // Returns all current head objects for a node's subscription list
 //
 // @param {Array} nodeHeads (list of each subscription's head/pointer object)
-//  {
-//    source: <b58_hash>,   // IPNS subscription hash
-//    head: <b58_hash>      // head message object hash
-//  }
+//  [
+//    {
+//      source: <b58_hash>,   // IPNS subscription hash
+//      head: <b58_hash>      // head message object hash
+//    }
+//  ]
 //
 // @return {Promise}
 //  [
@@ -101,9 +103,11 @@ const getMessagesFromObjectHashes = (nodeHeads) => {
 //
 // @return {Promise} b58 encoded ipfs object hash string
 //
-const getLatest = subscriptions => getHeadObjectsForSubscriptions(subscriptions)
+const getLatest = () => ipfsUtils.id()  // TODO: better state check to make sure node is online
+  .then(subscriptions => getHeadObjectsForSubscriptions(subscriptions))
   .then((headObjects) => {
     log.info(`${MODULE_NAME}: Retrieved head objects for subscriptions`)
+    console.log(headObjects)
     return getMessagesFromObjectHashes(headObjects)
   })
   .then((messageObjects) => {

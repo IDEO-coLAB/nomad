@@ -55,10 +55,10 @@ class MessageStore {
 
       const subStore = this.store[msg.source]
       if (R.length(subStore.messages) >= MAX_MESSAGE_STORE_SIZE) {
-        // remove from end
+        // remove the last message from end
         subStore.messages.pop()
       }
-      // add to the front
+      // add the latest message to the front
       subStore.messages.unshift(msg.message)
     }, messages)
 
