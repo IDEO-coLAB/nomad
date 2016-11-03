@@ -1,9 +1,16 @@
 const Node = require('./../src/node')
+// const util = require('util')
 
 const node = new Node()
 
-const processMessages = () => {
-  console.log('MESSAGES RECEIVED:\n', messages)
+const processMessages = (err, messages) => {
+  if (messages) {
+    // console.log('MESSAGES RECEIVED:\n', util.inspect(messages, {depth: null}))
+  }
+  if (err) {
+    // console.log('MESSAGES ERR:\n', err)
+  }
+  // console.log('MESSAGES RECEIVED!!!!!\n')
   // do something with the messages
 }
 

@@ -2,11 +2,11 @@ const Node = require('./../src/node')
 
 const node = new Node()
 
-const messages = [
-  () => 'Hello world from the Nomad mothership',
-  () => `At the beep, the time is ${new Date().toString()}`,
-  () => '4, 8, 15, 16, 23, 42',
-]
+// const messages = [
+//   () => 'Hello world from the Nomad mothership',
+//   () => `At the beep, the time is ${new Date().toString()}`,
+//   () => '4, 8, 15, 16, 23, 42',
+// ]
 
 // const createMessage = () => {
 //   const idx = Math.floor(Math.random() * messages.length)
@@ -17,7 +17,7 @@ let instance = null
 node.prepareToPublish()
   .then((n) => {
     instance = n
-    console.log('DEMO: CONNECTED!!!!')
+    // console.log('DEMO: CONNECTED!!!!')
     return instance.publishRoot('Demo sensor is running')
   })
   // .catch(() => {
