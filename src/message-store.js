@@ -55,10 +55,11 @@ class MessageStore {
 
       const subStore = this.store[msg.source]
       if (R.length(subStore.messages) >= MAX_MESSAGE_STORE_SIZE) {
-        subStore.messages.shift()
+        // remove from end
+        subStore.messages.pop()
       }
-
-      subStore.messages.push(msg.message)
+      // add to the front
+      subStore.messages.unshift(msg.message)
     }, messages)
 
     return messages

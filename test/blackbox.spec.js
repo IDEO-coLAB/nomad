@@ -21,10 +21,8 @@ describe('Black box test of publish then subscribe:', () => {
     setTimeout(() => {
       node = new Node()
       peerId = getPeerId(ipfsControl.getConfig())
-
       // Note: Override local subscriptions and force subscribe to self for testing
       node.subscriptions = [peerId]
-
       done()
     }, IPFSLaunchWaitSeconds * 1000)
   })
@@ -37,7 +35,7 @@ describe('Black box test of publish then subscribe:', () => {
   describe('publish: ', () => {
     it('should throw when publishing a message on a new IPFS instance before publishing root', (done) => {
       node.publish('hello').catch((err) => {
-        expect(err).to.not.exist
+        expect(err).to.exist
         done()
       })
     })
