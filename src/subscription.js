@@ -115,6 +115,64 @@ const getLatest = () => ipfsUtils.id()  // TODO: better state check to make sure
     return messageStore.put(messageObjects)
   })
 
-// API
+
+
+
+
+
+
+
+
+
+
+
+
+// Class: Subscription
 //
-module.exports = { getLatest }
+module.exports = class Subscription {
+  constructor(subscriptionId) {
+    this.id = subscriptionId
+    this._handlers = []
+  }
+
+  _removeHandler(handler) {
+    return () => {
+      const idxToRemove = R.indexOf(handler, this._handlers)
+      let newHandlers = this._handlers.slice(0)
+      newHandlers.splice(idxToRemove, 1)
+      this._handlers = newHandlers
+      return true
+    }
+  }
+
+  addHandler(handler) {
+    if (typeof handler !== 'function') {
+      // do something
+    }
+    if (R.contains(handler, this._handlers)) {
+      // do something
+    }
+    this._handlers.push(handler)
+    // return a handle to remove the listener
+    return this._removeHandler(handler)
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

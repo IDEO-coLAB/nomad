@@ -2,9 +2,11 @@ const fs = require('fs')
 const R = require('ramda')
 const taskQueue = require('task-queue')
 
+const Subscription = require('./subscription')
+// const { getLatest } = require('./subscribe')
+// const messageStore = require('./message-store')
+
 const { publish, publishRoot } = require('./publish')
-const { getLatest } = require('./subscribe')
-const messageStore = require('./message-store')
 const log = require('./utils/log')
 const config = require('./utils/config')
 const { id } = require('./utils/ipfs')
@@ -61,20 +63,30 @@ const passErrorOrDie = (err) => {
 module.exports = class Node {
   constructor() {
     this.isAtomic = config.isAtomic
-    this.subscriptions = config.subscriptions
-
-    this.messages = messageStore
-
     this.isOnline = false
     this.identity = null
 
-    this.tasks = new taskQueue.Queue({ capacity: 5, concurrency: 1 })
-    this.tasks.start()
+
+
+
+    this.subscriptions = R.mapObjIndexed((sub, subId) => new Subscription(subId), config.subscriptions)
+    // this.messages = messageStore
+
+
+
+
+
+    // this.tasks = new taskQueue.Queue({ capacity: 5, concurrency: 1 })
+    // this.tasks.start()
+
+
 
     // Try setting the node head from disk
     this.head = { DAG: null, path: null }
     try {
+      // TODO: create file if it does not exist
       const buffer = fs.readFileSync(NODE_HEAD_PATH)
+      // TODO: test if it has the correct properties
       this.head = JSON.parse(buffer.toString())
       log.info(`${MODULE_NAME}: Set node head from disk`)
     } catch (err) {
@@ -122,30 +134,54 @@ module.exports = class Node {
     return publishRoot(data, this).catch(passErrorOrDie)
   }
 
+
+
+
+
+
+
+
+
   // Handle all newly received subscription messages by passing the recent data
   // to a user-defined callback
   //
   // @param {Func} cb
   //
   onMessage(cb) {
-    log.info(`${MODULE_NAME}: Subscribing to ${R.length(this.subscriptions)} subscriptions`)
+    log.info(`${MODULE_NAME}: Registering handlers for ${R.length(R.keys(this.subscriptions))} subscriptions`)
 
-    const handleMessages = () => {
-      getLatest(this.subscriptions)
-        .then(messages => cb(null, messages))
-        .catch(passErrorOrDie)
-        .catch(cb)
-    }
+    console.log(this.subscriptions)
 
-    handleMessages()
 
-    this.subscribePollHandle = setInterval(() => {
-      if (this.tasks.size() < 1) {
-        // only poll if the previous poll finished, otherwise wait until next pass through
-        this.tasks.enqueue(handleMessages, { args: [] })
-      } else {
-        log.info(`skipping poll because task queue has length ${this.tasks.size()}`)
-      }
-    }, POLL_MILLIS)
+    let b = () => {}
+
+
+
+    console.log(R.indexOf(b, foo))
+
+
+
+
+
+
+
+
+    // const handleMessages = () => {
+    //   getLatest(this.subscriptions)
+    //     .then(messages => cb(null, messages))
+    //     .catch(passErrorOrDie)
+    //     .catch(cb)
+    // }
+
+    // handleMessages()
+
+    // this.subscribePollHandle = setInterval(() => {
+    //   if (this.tasks.size() < 1) {
+    //     // only poll if the previous poll finished, otherwise wait until next pass through
+    //     this.tasks.enqueue(handleMessages, { args: [] })
+    //   } else {
+    //     log.info(`skipping poll because task queue has length ${this.tasks.size()}`)
+    //   }
+    // }, POLL_MILLIS)
   }
 }
