@@ -29,7 +29,9 @@ module.exports = class Node {
     this.identity = null
 
     this.subscriptions = R.mapObjIndexed((sub, subId) => {
-      return new Subscription(subId)
+      const newSub = new Subscription(subId)
+      newSub.start()
+      return newSub
     }, config.subscriptions)
 
     // Try setting the node head from disk
@@ -95,7 +97,6 @@ module.exports = class Node {
     // possibly return list of remove functions
     R.values((sub) => {
       sub.addHandler(cb)
-      sub.start()
     }, this.subscriptions)
   }
 }

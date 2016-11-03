@@ -127,7 +127,7 @@ const syncHead = (head) => {
     return Promise.resolve(head.head)
   }
 
-  return Promise.resolve(head.source, head.head)
+  return Promise.resolve({ source: head.source, head: head.head })
 }
 
 // Returns the message (data) for a given object
@@ -140,13 +140,14 @@ const syncHead = (head) => {
 //    message: <data>
 //  }
 //
-const getMessage = (id, link) => {
-  log.info(`${MODULE_NAME}: Getting messages for subscription ${id}`)
+const getMessage = (obj) => {
+  let { head, source } = obj
+  log.info(`${MODULE_NAME}: Getting messages for subscription ${source}`)
 
-  return getDataLink(link)
+  return getDataLink(head)
     .then(ipfsUtils.object.cat)
     .then((message) => {
-      messageStore.put(id, message)
+      messageStore.put(source, message)
       return { message }
     })
 }
@@ -184,17 +185,6 @@ module.exports = class Subscription {
       .catch(passOrDie(MODULE_NAME))
       .catch(console.log)
   }
-
-
-
-
-
-
-
-
-
-
-
 
   _removeHandler(handler) {
     return () => {
