@@ -10,6 +10,10 @@ const messageStore = require('./message-store')
 
 const MODULE_NAME = 'SUBSCRIPTION'
 
+// How often to poll for new subscription messages
+// TODO: maybe move this into subscription.js
+const POLL_MILLIS = 1000 * 10
+
 const SUB_HEADS_PATH = config.path.subscriptionHeads
 
 // Get a link to the subscription link cache
@@ -140,27 +144,21 @@ const syncHead = (head) => {
 //    message: <data>
 //  }
 //
-const getMessage = (obj) => {
-  let { head, source } = obj
+const getMessage = (args) => {
+  let { head, source } = args
+  let messageLink
+
   log.info(`${MODULE_NAME}: Getting messages for subscription ${source}`)
 
   return getDataLink(head)
-    .then(ipfsUtils.object.cat)
+    .then((link) => {
+      messageLink = link
+      return ipfsUtils.object.cat(link)
+    })
     .then((message) => {
-      messageStore.put(source, message)
-      return { message }
+      return messageStore.put(source, message, messageLink)
     })
 }
-
-
-
-
-
-
-
-
-
-
 
 // Class: Subscription
 //
@@ -182,6 +180,10 @@ module.exports = class Subscription {
     getHead(this.id)
       .then(syncHead)
       .then(getMessage)
+      .then(() => {
+        console.log('going to poll in 10 seconds')
+        setTimeout(() => this._poll(), POLL_MILLIS)
+      })
       .catch(passOrDie(MODULE_NAME))
       .catch(console.log)
   }
@@ -208,22 +210,3 @@ module.exports = class Subscription {
     return this._removeHandler(handler)
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

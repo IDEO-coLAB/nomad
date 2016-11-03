@@ -12,13 +12,9 @@ const config = require('./utils/config')
 const { id } = require('./utils/ipfs')
 const { passOrDie } = require('./utils/errors')
 
-const MODULE_NAME = 'SENSOR'
+const MODULE_NAME = 'NODE'
 
 const NODE_HEAD_PATH = config.path.nodeHead
-
-// How often to poll for new subscription messages
-// TODO: maybe move this into subscription.js
-const POLL_MILLIS = 1000 * 10
 
 // Class: Node
 //

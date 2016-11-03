@@ -25,7 +25,7 @@ class MessageStore {
 
     if (keyPassed) {
       if (keyExists) {
-        return this.store[key].messages
+        return this.store[key]
       }
       return []
     }
@@ -37,26 +37,39 @@ class MessageStore {
   //
   // @param {String} key
   // @param {Object} message
+  // @param {string} link (hash to look up the message on the network)
   //
   // @return {Object} MessageStore
   //
-  put(key, message) {
-    log.info(`${MODULE_NAME}: Adding new message to the store for ${key}`)
+  put(key, message, link) {
+    log.info(`${MODULE_NAME}: Attempting to add new message for ${key}`)
 
     const keyExists = R.has(key, this.store)
     if (!keyExists) {
-      this.store[key] = { messages: [] }
+      this.store[key] = []
     }
 
     const subscriptionStore = this.store[key]
-    if (R.length(subscriptionStore.messages) >= MAX_MESSAGE_STORE_SIZE) {
-      // remove the last message from end
-      subscriptionStore.messages.pop()
-    }
-    // add the latest message to the front
-    subscriptionStore.messages.unshift(message)
+    const messageExists = R.any(sub => sub.link === link, subscriptionStore)
 
-    return true
+    if (messageExists) {
+      log.info(`${MODULE_NAME}: Duplicate message exists for ${key}`)
+      return subscriptionStore
+    }
+
+    if (R.length(subscriptionStore) >= MAX_MESSAGE_STORE_SIZE) {
+      // remove the last message from end
+      subscriptionStore.pop()
+    }
+
+    // add the latest message to the front
+    subscriptionStore.unshift({
+      link,
+      message,
+    })
+
+    log.info(`${MODULE_NAME}: Message added for ${key}`)
+    return subscriptionStore
   }
 }
 
