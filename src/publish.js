@@ -4,13 +4,17 @@ const R = require('ramda')
 const log = require('./utils/log')
 const config = require('./utils/config')
 const ipfsUtils = require('./utils/ipfs')
-const errors = require('./utils/errors')
 
 const MODULE_NAME = 'PUBLISH'
 const NODE_HEAD_PATH = config.path.head
 
-// Initialize a new sensor head object
-const initNewNodeHead = (data) => {
+// Initialize a new sensor head object. This is a blank IPFS DAG object.
+//
+// @param {Anything} data
+//
+// @return {Promise} blank ipfs DAG object
+//
+const initLatestNodeHead = (data) => {
   log.info(`${MODULE_NAME}: Initializing a new sensor head object`)
 
   return Promise.all([ipfsUtils.object.create(), ipfsUtils.data.add(data)])
@@ -21,20 +25,33 @@ const initNewNodeHead = (data) => {
 
       log.info(`${MODULE_NAME}: Adding data link to new sensor head`)
 
-      return ipfsUtils.object.link(dataDAG.node, emptyDAG, 'data')
+      return ipfsUtils.object.link(dataDAG.node, emptyDAG, linkName)
     })
 }
 
-// Link the previous sensor head to the new sensor head
-const linkNewNodeHeadToPrev = (sourceDAG, targetDAG) => {
+// Link the previous sensor head to the new sensor head by creating the
+// appropriate links in the ipfs DAG object
+//
+// @param {Object} sourceDAG (ipfs DAG object)
+// @param {Object} targetDAG (ipfs DAG object)
+//
+// @return {Promise} source -> target linked ipfs DAG object
+//
+const linkLatestNodeHeadToPrev = (sourceDAG, targetDAG) => {
   const linkName = 'prev'
   log.info(`${MODULE_NAME}: Adding prev link to new sensor head`)
 
   return ipfsUtils.object.link(sourceDAG, targetDAG, linkName)
 }
 
-// Publish the new sensor head to the network
-const publishNewNodeHead = (dag, node) => {
+// Publish the nodes latest head to the network
+//
+// @param {Object} dag (ipfs DAG object)
+// @param {Object} node (nomad node object)
+//
+// @return {Promise} nomad node object
+//
+const publishLatestNodeHead = (dag, node) => {
   log.info(`${MODULE_NAME}: Publishing new sensor head: ${dag.toJSON().Hash} with links`, dag.toJSON().Links)
 
   return ipfsUtils.object.put(dag)
@@ -45,53 +62,47 @@ const publishNewNodeHead = (dag, node) => {
     .then((published) => {
       // { Name: <cur node id>, Value: <new node head hash> }
       node.head.path = `/ipfs/${published.Value}`
-
-      // write the head
+      // write the head to disk
       fs.writeFileSync(NODE_HEAD_PATH, JSON.stringify(node.head))
-
+      // return the full node
       return node
     })
 }
 
-// Publish the a first sensor root object in the network
-// This will have no 'prev' link in it
+// Publish the node's first ever node head in the network
+// Note: this will not have a 'prev' link in the DAG object!
+//
+// @param {Anything} data
+// @param {Object} node (nomad node object)
+//
+// @return {Promise} ipfs DAG object
+//
 const publishNodeRoot = (data, node) => {
   log.info(`${MODULE_NAME}: Publishing sensor root`)
 
-  return initNewNodeHead(data)
-    .then(newDAG => publishNewNodeHead(newDAG, node))
+  return initLatestNodeHead(data)
+    .then(newDAG => publishLatestNodeHead(newDAG, node))
     .catch(error => Promise.reject({ PUBLISH_ROOT_ERROR: error }))
 }
 
-// Publish new sensor data to the network
+// Publish the latest sensor data to the network
+//
+// @param {Anything} data
+// @param {Object} node (nomad node object)
+//
+// @return {Promise} ipfs DAG object
+//
 const publishNodeData = (data, node) => {
   log.info(`${MODULE_NAME}: Publishing sensor data`)
 
-  return initNewNodeHead(data)
-    .then(newDAG => linkNewNodeHeadToPrev(node.head.DAG, newDAG))
-    .then(newDAG => publishNewNodeHead(newDAG, node))
-    // .catch(error => {
-    //   log.err(`${MODULE_NAME}: ${error}`)
-    //   const errorObj = new NomadError(error)
-    //   log.err(errorObj.toErrorString())
-    //   return Promise.reject(errorObj)
-    // })
-}
-
-// Set the local sensor head from disk on node bootup
-// FIXME, move to node.js as class method
-const setHead = (node) => {
-  log.info(`${MODULE_NAME}: Reading sensor head from disk on boot up`)
-
-  const buffer = fs.readFileSync(NODE_HEAD_PATH)
-  const curNodeHead = JSON.parse(buffer.toString())
-  node.head = curNodeHead
+  return initLatestNodeHead(data)
+    .then(newDAG => linkLatestNodeHeadToPrev(node.head.DAG, newDAG))
+    .then(newDAG => publishLatestNodeHead(newDAG, node))
 }
 
 // API
-
+//
 module.exports = {
   publish: publishNodeData,
   publishRoot: publishNodeRoot,
-  setHead,
 }

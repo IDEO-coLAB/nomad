@@ -1,127 +1,120 @@
-// TODO: remove keys
-// "QmYcbm7GPAd3S7nSSrsxuyxef9KQ7fR3SkTmLcWX9BdN8y"   // resolves (is an id)
-// "Qmf8Ps1gfrkDRXjF2vsBwEbThczvPepSzXUA3yh64aSVD6"   // does not resolve
-// "Qmc6cSnvbGUfiJaUmu5tX4AzX1HUqdrokLvDMJk5gihQ76" is a content hash
-
-
+const Q = require('q')
 const R = require('ramda')
 
 const log = require('./utils/log')
 const ipfsUtils = require('./utils/ipfs')
-const NomadError = require('./utils/errors')
+const { NomadError } = require('./utils/errors')
+const messageStore = require('./message-store')
 
 const MODULE_NAME = 'SUBSCRIBE'
 
-// for any Nomad message object in the linked list of messages,
-// returns base58 encoded hash for message data IPLD object
-/* For reference: Nomad stores messages as a linked list of IPLD objects. Each
-   object has an empty data property and two links:
-   {
-      data: '',
-      links: [
-        { name: prev ... }
-        { name: data ... }
-      ]
-   }
+// Find the data object based on a Nomad pointer object's path
+// and return the path for the pointer object's 'data' link
+//
+// Sample b58 string: Qmb3Vos8siQmz9nm74MLN1j4MwZeXw6gnggWK2aUmp71q7
+//
+// @param {String} objectPath (b58 ipfs object hash)
+//
+// @return {Promise} b58 encoded ipfs object hash string
+//
+const getDataHashFromPointerObjHash = (objectPath) => {
+  log.info(`${MODULE_NAME}: fetching data for head object at ${objectPath}`)
 
-  The data link references an IPLD object that is the head of a unixfs object that is the
-  message data. The prev link references the previous Nomad message object.
-*/
-const messageDataObjectHash = (headObjectPath) => {
-  log.info(`${MODULE_NAME}: fetching data for head object at ${headObjectPath}`)
-  return ipfsUtils.object.get(headObjectPath).then((object) => {
-    const links = object.links
-    if (R.isNil(links)) {
-      log.info(`${MODULE_NAME}: head object is missing a links property`)
-      throw new NomadError('head object is missing links property')
-    }
+  return ipfsUtils.object.get(objectPath)
+    .then((object) => {
+      const links = object.links
+      if (R.isNil(links)) {
+        log.info(`${MODULE_NAME}: head object is missing a links property`)
+        throw new NomadError('head object is missing links property')
+      }
 
-    const data = R.find(R.propEq('name', 'data'), links)
-    if (R.isNil(data)) {
-      log.info(`${MODULE_NAME}: head object is missing a data link`)
-      throw new NomadError('head object is missing a data link')
-    }
+      const data = R.find(R.propEq('name', 'data'), links)
+      if (R.isNil(data)) {
+        log.info(`${MODULE_NAME}: head object is missing a data link`)
+        throw new NomadError('head object is missing a data link')
+      }
 
-    // base 58 encode. Downstream functions expect this
-    const encoded = ipfsUtils.base58FromBuffer(data.hash)
-    return Promise.resolve(encoded)
-  })
+      const encoded = ipfsUtils.base58FromBuffer(data.hash)
+      return Promise.resolve(encoded)
+    })
 }
 
-// pairwise compares lists of Nomad message object hashes and returns
-// true if and only if at least one pair is different. Used to decide if
-// any subscription has a new message. Should compare Nomad object, not referenced
-// data object, since a stream might send the same data more than once, and we
-// should consider the same data sent a second time as a new message. The Nomad object
-// hash will be different since it hashes over a link to the previous message.
-const allSameMessages = (prevHashList, currentHashList) => {
-  if (R.isEmpty(prevHashList) || R.isEmpty(currentHashList)) {
-    return false
-  }
-  return R.all(R.equals(true), R.zipWith(R.equals, prevHashList, currentHashList))
+// Get all current head objects for a node's subscription list
+//
+// @param {Array} subIds (Array of b58 ipfs object hashes)
+//
+// @return {Promise}
+//  [
+//    {
+//      source: <b58_hash>,         // IPNS subscription hash
+//      head: /ipfs/<b58_hash>      // hash is a b58 encoded
+//    }
+//  ]
+//
+const getHeadObjectsForSubscriptions = (subIds) => {
+  log.info(`${MODULE_NAME}: Getting head objects for subscriptions`)
+
+  const generateSubscriptionPromise = subId => ipfsUtils.name.resolve(subId)
+    .then(subscriptionObj => R.prop('Path', subscriptionObj))
+    .then(objectHash => Promise.resolve({ source: subId, head: objectHash }))
+
+  const ipnsResolverPromises = R.map(sub => generateSubscriptionPromise(sub), subIds)
+
+  return Q.allSettled(ipnsResolverPromises)
+    .then((results) => {
+      const resolvedSubs = R.filter(r => r.state === 'fulfilled', results)
+      return R.map(r => r.value, resolvedSubs)
+    })
 }
 
-// returns a promise that resolves to list of head paths:
-// { name: <IPNS subscription name>, head: <head path>}
-// head path is /IPNS/<hash>
-const getSubscriptionHeads = (subscriptions) => {
-  log.info(`${MODULE_NAME}: Getting message head objects for subscriptions`)
-  const nameToLatestObjectHash = R.pipeP(
-    ipfsUtils.name.resolve,
-    R.prop('Path')
-  )
-
-  return Promise.all(
-    R.map(
-      subscription => nameToLatestObjectHash(subscription)
-        .then(objectHash => Promise.resolve({ name: subscription, head: objectHash }))
-      , subscriptions
-    )
-  )
-}
-
-// given list of objects: {name, head} where name is IPNS subscription name
-// and hash is head message object hash, returns promise that resolves to
-// list of latest messages: {name, message}
-const getCurrentMessagesFromHeadObjectHashes = (hashesObject) => {
+// Returns all current head objects for a node's subscription list
+//
+// @param {Array} nodeHeads (list of each subscription's head/pointer object)
+//  [
+//    {
+//      source: <b58_hash>,   // IPNS subscription hash
+//      head: <b58_hash>      // head message object hash
+//    }
+//  ]
+//
+// @return {Promise}
+//  [
+//    {
+//      source: <b58_hash>,   // IPNS subscription hash
+//      message: <data>
+//    }
+//  ]
+//
+const getMessagesFromObjectHashes = (nodeHeads) => {
   log.info(`${MODULE_NAME}: Getting current subscription messages`)
 
-  const procs = R.pipeP(messageDataObjectHash, ipfsUtils.object.cat)
+  const getMessageDataFromHash = nodeHead => getDataHashFromPointerObjHash(nodeHead.head)
+    .then(ipfsUtils.object.cat)
+    .then(message => Promise.resolve({ source: nodeHead.source, message }))
 
-  return Promise.all(
-    R.map(
-      hashObject => procs(hashObject.head)
-      .then(message => Promise.resolve({ name: hashObject.name, message }))
-      , hashesObject
-    )
-  )
+  const getMessagePromises = R.map(nodeHead => getMessageDataFromHash(nodeHead), nodeHeads)
+
+  return Promise.all(getMessagePromises)
 }
 
-let previousSubscriptionHashses = []
-// only calls callback if at least one subscription has a new message
-// returns promises, but I'm not sure if we need it to return anything,
-// maybe for error handling
-// TODO: accept err callback and call with any errors
-const getNewSubscriptionMessages = (subscriptions, cb) => {
-  getSubscriptionHeads(subscriptions)
+// On message events, pass relevant messages or errors back to the user
+//
+// @param {Array} subscriptions (list of b58 ids)
+//
+// @return {Promise} b58 encoded ipfs object hash string
+//
+const getLatest = () => ipfsUtils.id()  // TODO: better state check to make sure node is online
+  .then(subscriptions => getHeadObjectsForSubscriptions(subscriptions))
   .then((headObjects) => {
-    // headObject is list of {name, head}
-    const heads = R.pluck('head', headObjects)
-
-    if (allSameMessages(previousSubscriptionHashses, heads)) {
-      // should we worry about returning promises, since we call a callback with new messages
-      log.info(`${MODULE_NAME}: No new messages for any subscription`)
-      return Promise.resolve()
-    }
-
-    previousSubscriptionHashses = heads
-    return getCurrentMessagesFromHeadObjectHashes(headObjects)
-    .then((messageObjects) => {
-      log.info(`${MODULE_NAME}: About to call message handler callback`)
-      cb(messageObjects)
-      return Promise.resolve()
-    })
+    log.info(`${MODULE_NAME}: Retrieved head objects for subscriptions`)
+    console.log(headObjects)
+    return getMessagesFromObjectHashes(headObjects)
   })
-}
+  .then((messageObjects) => {
+    log.info(`${MODULE_NAME}: Retrieved recent messages for subscriptions`)
+    return messageStore.put(messageObjects)
+  })
 
-module.exports = { getNewSubscriptionMessages }
+// API
+//
+module.exports = { getLatest }

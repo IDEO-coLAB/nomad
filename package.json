@@ -1,5 +1,5 @@
 {
-  "name": "nomad",
+  "name": "nomad-stream",
   "version": "1.0.0",
   "description": "A Dispersed Computing Network Composed of 'Software Sensor'",
   "main": "src/index.js",
