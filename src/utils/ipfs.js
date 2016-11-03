@@ -29,7 +29,7 @@ const mapError = (err) => {
       log.err(newError.toErrorString())
       return Promise.reject(newError)
     default:
-      log.err(`${MODULE_NAME}: Unhandled IPFS error, ${err.message}`)
+      log.err(`${MODULE_NAME}: Unhandled IPFS error: ${err.message}`)
       return Promise.reject(err)
   }
 }
@@ -59,11 +59,11 @@ const name = {
     const hash = dag.toJSON().Hash
     log.info(`${MODULE_NAME}: Publishing ${hash} via IPNS`)
     return ipfs.name.publish(hash)
-    .then(function(res) {
-      log.info(`${MODULE_NAME}: Successfully published via IPNS`)
-      return Promise.resolve(res)
-    })
-    .catch(mapError)
+      .then((res) => {
+        log.info(`${MODULE_NAME}: Successfully published via IPNS`)
+        return Promise.resolve(res)
+      })
+      .catch(mapError)
   },
 }
 
@@ -97,11 +97,11 @@ const object = {
     log.info(`${MODULE_NAME}: Adding '${linkName}' link to an object`)
 
     if (R.isNil(sourceDAG)) {
-      return Promise.reject(new errors.NomadError(`MODULE_NAME: sourceDAG was null`))
+      return Promise.reject(new errors.NomadError('MODULE_NAME: sourceDAG was null'))
     }
 
     if (R.isNil(targetDAG)) {
-      return Promise.reject(new errors.NomadError(`MODULE_NAME: targetDAG was null`))
+      return Promise.reject(new errors.NomadError('MODULE_NAME: targetDAG was null'))
     }
 
     const sourceHash = sourceDAG.toJSON().Hash
