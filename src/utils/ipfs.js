@@ -2,7 +2,7 @@ const bs58 = require('bs58')
 const ipfsApi = require('ipfs-api')
 const R = require('ramda')
 const streamToPromise = require('stream-to-promise')
-const { DAGLink } = require('ipfs-merkle-dag')
+const { DAGLink, DAGNode } = require('ipfs-merkle-dag')
 
 const log = require('./log')
 const errors = require('./errors')
@@ -32,6 +32,32 @@ const mapError = (err) => {
       log.err(`${MODULE_NAME}: Unhandled IPFS error: ${err.message}`)
       return Promise.reject(err)
   }
+}
+
+// Create a valid DAGNode from an object
+//
+// @param {Object} obj
+//
+// @return {Object} DAGNode
+//
+const createDAGNode = (obj) => {
+  // TODO: sanity check object properties!!
+  // obj is a stringified DAGNode object, not the class instance yet,
+  // but this explains the capitalization for property access
+  return new DAGNode(obj.Data, obj.Links)
+}
+
+// Check if an object is a valid DAGNode
+//
+// @param {Object} obj
+//
+// @return {Bool}
+//
+const validDAGNode = (obj) => {
+  if (obj instanceof DAGNode) {
+    return true
+  }
+  return false
 }
 
 // ID Utils
@@ -104,6 +130,9 @@ const object = {
       return Promise.reject(new errors.NomadError('MODULE_NAME: targetDAG was null'))
     }
 
+  console.log('sourceDAG', typeof sourceDAG.toJSON)
+  console.log('targetDAG', typeof targetDAG.toJSON)
+
     const sourceHash = sourceDAG.toJSON().Hash
     const targetHash = targetDAG.toJSON().Hash
 
@@ -127,4 +156,13 @@ const object = {
   },
 }
 
-module.exports = { id, data, name, object, base58FromBuffer }
+module.exports = {
+  id,
+  data,
+  name,
+  object,
+  base58FromBuffer,
+  extractMultihashFromPath,
+  validDAGNode,
+  createDAGNode,
+}

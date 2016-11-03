@@ -6,6 +6,7 @@ const NomadError = require('./errors')
 
 const userConfigPath = path.resolve(__dirname, './../../nomad.json')
 const nodeHeadPath = path.resolve(__dirname, './../../repo/node-head.json')
+const subscriptionHeadsPath = path.resolve(__dirname, './../../repo/subscription-heads.json')
 
 let userConfigJSON
 
@@ -37,6 +38,7 @@ module.exports = {
   isAtomic,
   subscriptions,
   path: {
-    head: nodeHeadPath,
+    nodeHead: nodeHeadPath,
+    subscriptionHeads: subscriptionHeadsPath
   },
 }

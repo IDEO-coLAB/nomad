@@ -15,21 +15,22 @@ const node = new Node()
 
 let instance = null
 node.prepareToPublish()
-  .then((n) => {
-    instance = n
-    // console.log('DEMO: CONNECTED!!!!')
-    return instance.publishRoot('Demo sensor is running')
-  })
+  // .then((n) => {
+  //   instance = n
+  //   // console.log('DEMO: CONNECTED!!!!')
+  //   return instance.publishRoot('Demo sensor is running')
+  // })
   // .catch(() => {
   //   log.err('Error publishing root message')
   // })
-  // .then(() => {
-  //   console.log('DEMO: ROOT PUBLISHED!!!!')
-  //   setInterval(() => {
-  //     instance.publish(createMessage())
-  //   }, 60000)
-  //   return instance.publish('hello!')
-  // })
+  .then(() => {
+    console.log('READY')
+    // console.log('DEMO: ROOT PUBLISHED!!!!')
+    // setInterval(() => {
+    //   instance.publish(createMessage())
+    // }, 60000)
+    return node.publish(new Date().toString() + ' is the time señor!')
+  })
   // .catch((err) => {
   //   // log.err('err')
   //   // console.log('DEMO: CONNECT ERROR!!!!', e)
@@ -39,6 +40,6 @@ node.prepareToPublish()
   // .then(() => {
   //   // console.log('DEMO: PUBLLISHED!!!!', d)
   // })
-  // .catch(() => {
-  //   // console.log('DEMO: PUBLISH ERROR!!!!', e)
-  // })
+  .catch(() => {
+    // console.log('DEMO: PUBLISH ERROR!!!!', e)
+  })

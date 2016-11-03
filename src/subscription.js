@@ -1,26 +1,51 @@
+const fs = require('fs')
 const Q = require('q')
 const R = require('ramda')
 
 const log = require('./utils/log')
 const ipfsUtils = require('./utils/ipfs')
-const { NomadError } = require('./utils/errors')
+const config = require('./utils/config')
+const { NomadError, passOrDie } = require('./utils/errors')
 const messageStore = require('./message-store')
 
-const MODULE_NAME = 'SUBSCRIBE'
+const MODULE_NAME = 'SUBSCRIPTION'
 
-// Find the data object based on a Nomad pointer object's path
-// and return the path for the pointer object's 'data' link
-//
-// Sample b58 string: Qmb3Vos8siQmz9nm74MLN1j4MwZeXw6gnggWK2aUmp71q7
-//
-// @param {String} objectPath (b58 ipfs object hash)
-//
-// @return {Promise} b58 encoded ipfs object hash string
-//
-const getDataHashFromPointerObjHash = (objectPath) => {
-  log.info(`${MODULE_NAME}: fetching data for head object at ${objectPath}`)
+const SUB_HEADS_PATH = config.path.subscriptionHeads
 
-  return ipfsUtils.object.get(objectPath)
+// Get a link to the subscription link cache
+//
+// @param {String} id
+//
+// @return {String} || null
+//
+getLink = (id) => {
+  const buffer = fs.readFileSync(SUB_HEADS_PATH)
+  const links = JSON.parse(buffer.toString())
+  return links[id] || null
+}
+
+// Add a link to the subscription link cache
+//
+// @param {String} id
+// @param {String} link
+//
+putLink = (id, link) => {
+  const buffer = fs.readFileSync(SUB_HEADS_PATH)
+  const links = JSON.parse(buffer.toString())
+  links[id] = link
+  fs.writeFileSync(SUB_HEADS_PATH, `${JSON.stringify(links)}\r\n`)
+}
+
+// Extract the data link from a specified object
+//
+// @param {String} id (b58 ipfs object hash)
+//
+// @return {Promise}
+//
+const getDataLink = (id) => {
+  log.info(`${MODULE_NAME}: fetching data for object ${id}`)
+
+  return ipfsUtils.object.get(id)
     .then((object) => {
       const links = object.links
       if (R.isNil(links)) {
@@ -39,83 +64,92 @@ const getDataHashFromPointerObjHash = (objectPath) => {
     })
 }
 
-// Get all current head objects for a node's subscription list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Get the head object from the network for a single subscription
 //
-// @param {Array} subIds (Array of b58 ipfs object hashes)
+// @param {String} id (b58 ipfs object hash)
 //
 // @return {Promise}
-//  [
-//    {
-//      source: <b58_hash>,         // IPNS subscription hash
-//      head: /ipfs/<b58_hash>      // hash is a b58 encoded
-//    }
-//  ]
+//  {
+//    source: <b58_hash>,   // IPNS subscription hash
+//    head: <b58_hash>      // hash is a b58 encoded
+//  }
 //
-const getHeadObjectsForSubscriptions = (subIds) => {
-  log.info(`${MODULE_NAME}: Getting head objects for subscriptions`)
+const getHead = (id) => {
+  log.info(`${MODULE_NAME}: Fetching head for subscription ${id}`)
 
-  const generateSubscriptionPromise = subId => ipfsUtils.name.resolve(subId)
+  return ipfsUtils.name.resolve(id)
     .then(subscriptionObj => R.prop('Path', subscriptionObj))
-    .then(objectHash => Promise.resolve({ source: subId, head: objectHash }))
-
-  const ipnsResolverPromises = R.map(sub => generateSubscriptionPromise(sub), subIds)
-
-  return Q.allSettled(ipnsResolverPromises)
-    .then((results) => {
-      const resolvedSubs = R.filter(r => r.state === 'fulfilled', results)
-      return R.map(r => r.value, resolvedSubs)
+    .then((objectHash) => {
+      const head = ipfsUtils.extractMultihashFromPath(objectHash)
+      return Promise.resolve({ source: id, head })
     })
 }
 
-// Returns all current head objects for a node's subscription list
+// sync the network's subscription head with the local subscription head
 //
-// @param {Array} nodeHeads (list of each subscription's head/pointer object)
-//  [
-//    {
-//      source: <b58_hash>,   // IPNS subscription hash
-//      head: <b58_hash>      // head message object hash
-//    }
-//  ]
+// @param {Object} head (subscription's head object)
+//  {
+//    source: <b58_hash>,         // IPNS subscription hash
+//    head: <b58_hash>            // hash is a b58 encoded
+//  }
 //
 // @return {Promise}
-//  [
-//    {
-//      source: <b58_hash>,   // IPNS subscription hash
-//      message: <data>
-//    }
-//  ]
 //
-const getMessagesFromObjectHashes = (nodeHeads) => {
-  log.info(`${MODULE_NAME}: Getting current subscription messages`)
+const syncHead = (head) => {
+  log.info(`${MODULE_NAME}: Syncing local and remote heads for subscription ${head.source}`)
 
-  const getMessageDataFromHash = nodeHead => getDataHashFromPointerObjHash(nodeHead.head)
-    .then(ipfsUtils.object.cat)
-    .then(message => Promise.resolve({ source: nodeHead.source, message }))
+  // if there is no locally stored subscription head, write it to disk and continue
+  const link = getLink(head.source)
+  if (R.isNil(link)) {
+    putLink(head.source, head.head)
+    return Promise.resolve(head.head)
+  }
 
-  const getMessagePromises = R.map(nodeHead => getMessageDataFromHash(nodeHead), nodeHeads)
-
-  return Promise.all(getMessagePromises)
+  return Promise.resolve(head.source, head.head)
 }
 
-// On message events, pass relevant messages or errors back to the user
+// Returns the message (data) for a given object
 //
-// @param {Array} subscriptions (list of b58 ids)
+// @param {String} id (a b58 encoded string)
+// @param {String} link (a b58 encoded string)
 //
-// @return {Promise} b58 encoded ipfs object hash string
+// @return {Promise}
+//  {
+//    message: <data>
+//  }
 //
-const getLatest = () => ipfsUtils.id()  // TODO: better state check to make sure node is online
-  .then(subscriptions => getHeadObjectsForSubscriptions(subscriptions))
-  .then((headObjects) => {
-    log.info(`${MODULE_NAME}: Retrieved head objects for subscriptions`)
-    console.log(headObjects)
-    return getMessagesFromObjectHashes(headObjects)
-  })
-  .then((messageObjects) => {
-    log.info(`${MODULE_NAME}: Retrieved recent messages for subscriptions`)
-    return messageStore.put(messageObjects)
-  })
+const getMessage = (id, link) => {
+  log.info(`${MODULE_NAME}: Getting messages for subscription ${id}`)
 
-
+  return getDataLink(link)
+    .then(ipfsUtils.object.cat)
+    .then((message) => {
+      messageStore.put(id, message)
+      return { message }
+    })
+}
 
 
 
@@ -133,7 +167,34 @@ module.exports = class Subscription {
   constructor(subscriptionId) {
     this.id = subscriptionId
     this._handlers = []
+    // set the latest head from disk
+    this.link = getLink(subscriptionId) || null
   }
+
+  start() {
+    // start polling
+    this._poll()
+  }
+
+  _poll() {
+    // ipfsUtils.id() // better online check?
+    getHead(this.id)
+      .then(syncHead)
+      .then(getMessage)
+      .catch(passOrDie(MODULE_NAME))
+      .catch(console.log)
+  }
+
+
+
+
+
+
+
+
+
+
+
 
   _removeHandler(handler) {
     return () => {
