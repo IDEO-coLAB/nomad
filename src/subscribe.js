@@ -103,8 +103,8 @@ const getMessagesFromObjectHashes = (nodeHeads) => {
 //
 // @return {Promise} b58 encoded ipfs object hash string
 //
-const getLatest = () => ipfsUtils.id()  // TODO: better state check to make sure node is online
-  .then(subscriptions => getHeadObjectsForSubscriptions(subscriptions))
+const getLatest = (subscriptions) => ipfsUtils.id()  // TODO: better state check to make sure node is online
+  .then(() => getHeadObjectsForSubscriptions(subscriptions))
   .then((headObjects) => {
     log.info(`${MODULE_NAME}: Retrieved head objects for subscriptions`)
     console.log(headObjects)
