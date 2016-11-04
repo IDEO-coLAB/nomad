@@ -8,28 +8,31 @@ const node = new Node()
 //   () => '4, 8, 15, 16, 23, 42',
 // ]
 
-// const createMessage = () => {
-//   const idx = Math.floor(Math.random() * messages.length)
-//   return (messages[idx]())
-// }
+let idx = 0
+
+const createMessage = () => {
+  // const idx = Math.floor(Math.random() * messages.length)
+  // return (messages[idx]())
+  return `Message: ${idx++}`
+}
 
 let instance = null
 node.prepareToPublish()
   // .then((n) => {
   //   instance = n
   //   // console.log('DEMO: CONNECTED!!!!')
-  //   return instance.publishRoot('Demo sensor is running')
+  //   return instance.publishRoot('ROOT MESSAGE')
   // })
   // .catch(() => {
   //   log.err('Error publishing root message')
   // })
   .then(() => {
     console.log('READY')
-    // console.log('DEMO: ROOT PUBLISHED!!!!')
-    // setInterval(() => {
-    //   instance.publish(createMessage())
-    // }, 60000)
-    return node.publish(new Date().toString() + ' is the time señor!')
+    console.log('DEMO: ROOT PUBLISHED!!!!')
+    setInterval(() => {
+      instance.publish(createMessage())
+    }, 60000)
+    return node.publish(createMessage())
   })
   // .catch((err) => {
   //   // log.err('err')

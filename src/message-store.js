@@ -50,13 +50,6 @@ class MessageStore {
     }
 
     const subscriptionStore = this.store[key]
-    const messageExists = R.any(sub => sub.link === link, subscriptionStore)
-
-    if (messageExists) {
-      log.info(`${MODULE_NAME}: Duplicate message exists for ${key}`)
-      return subscriptionStore
-    }
-
     if (R.length(subscriptionStore) >= MAX_MESSAGE_STORE_SIZE) {
       // remove the last message from end
       subscriptionStore.pop()
