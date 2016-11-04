@@ -13,44 +13,6 @@ const MODULE_NAME = 'SUBSCRIPTION'
 // TODO: maybe move this into subscription.js
 const POLL_MILLIS = 1000 * 10
 
-
-// TODO: Move to IPFS utils???
-// TODO: Move to IPFS utils???
-// TODO: Move to IPFS utils???
-// Extract the data link from a specified object
-//
-// @param {String} id (b58 ipfs object hash)
-// @param {String} linkName (optional)
-//
-// @return {Promise}
-//
-const pluckLinkFromIpfsObject = (id, linkName='data') => {
-  log.info(`${MODULE_NAME}: fetching data for object ${id}`)
-
-  // console.log(id)
-  // console.log(linkName)
-
-  return ipfsUtils.object.get(id)
-    .then((object) => {
-      const links = object.links
-      if (R.isNil(links)) {
-        log.info(`${MODULE_NAME}: head object is missing a links property`)
-        throw new NomadError('head object is missing links property')
-      }
-
-      const data = R.find(R.propEq('name', linkName), links)
-      if (R.isNil(data)) {
-        log.info(`${MODULE_NAME}: head object is missing a ${linkName} link`)
-        throw new NomadError(`head object is missing a ${linkName} link`)
-      }
-
-      const encoded = ipfsUtils.base58FromBuffer(data.hash)
-      return Promise.resolve(encoded)
-    })
-}
-
-
-
 // Class: Subscription
 //
 module.exports = class Subscription {
@@ -94,9 +56,8 @@ module.exports = class Subscription {
       })
       .catch(passOrDie(MODULE_NAME))
       .catch((err) => {
-        log.err(`${MODULE_NAME}: POLL ERR ${this.id}`)
-        console.log(err)
-        return Promise.reject(err)
+        log.err(`${MODULE_NAME}: Poll error for ${this.id}`, err)
+        setTimeout(() => this._poll(), POLL_MILLIS)
       })
   }
 
@@ -107,13 +68,17 @@ module.exports = class Subscription {
   // @return {Promise} b58 hash
   //
   _getHead() {
-    log.info(`${MODULE_NAME}: Fetching head for ${this.id}`)
+    log.info(`${MODULE_NAME}: Fetching remote head for ${this.id}`)
 
     return ipfsUtils.name.resolve(this.id)
       .then(subscriptionObj => R.prop('Path', subscriptionObj))
       .then((objectHash) => {
         const head = ipfsUtils.extractMultihashFromPath(objectHash)
         return Promise.resolve(head)
+      })
+      .catch((err) => {
+        log.err(`${MODULE_NAME}: _getHead error for ${this.id}`, err)
+        return Promise.reject(err)
       })
   }
 
@@ -124,29 +89,28 @@ module.exports = class Subscription {
   // @return {Promise} b58 hash
   //
   _syncHead(head) {
-    log.info(`${MODULE_NAME}: Syncing local and remote heads for ${this.id}`)
+    log.info(`${MODULE_NAME}: Syncing local index and remote head for ${this.id}`)
 
     const localIndex = subscriptionStore.get(this.id)
 
     // if there is no locally stored subscription head, write it to disk and continue
     if (R.isNil(localIndex)) {
-      log.info(`${MODULE_NAME}: No local head found, adding new local head for ${this.id}`)
-      subscriptionStore.put(this.id, head)
+      log.info(`${MODULE_NAME}: No local index found, adding new local index (${head}) for ${this.id}`)
       return this._deliverMessage(head)
     }
 
     // if the locally stored subscription head is in sync with the
     // network's latest version of the head, continue
     if (localIndex === head) {
-      log.info(`${MODULE_NAME}: Local head matches remote head for ${this.id}`)
+      log.info(`${MODULE_NAME}: Local index (${localIndex}) matches remote head (${head}) for ${this.id}`)
       return this._deliverMessage(head)
     }
 
     // if the locally stored subscription head is NOT in sync with the
     // network's latest version of the head, then walk back to fund the
-    // head that matches our local head, then start delivering the message
+    // head that matches our local index, then start delivering the message
     // backlog in order
-    log.info(`${MODULE_NAME}: Local head does not match remote head for ${this.id}`)
+    log.info(`${MODULE_NAME}: Local index (${localIndex}) does not match remote head (${head}) for ${this.id}`)
     return this._walkBack(head)
   }
 
@@ -157,37 +121,43 @@ module.exports = class Subscription {
   // @return {Promise}
   //
   _deliverMessage(head) {
-    const index = subscriptionStore.get(this.id)
-
-    if (head === index) {
-      log.info(`${MODULE_NAME}: Network head was unchanged for ${this.id}`)
-      return Promise.resolve(true)
-    }
-
     let messageLink
 
-    return pluckLinkFromIpfsObject(head)
+    return ipfsUtils.extractLinkFromIpfsObject(head)
       .then((link) => {
         messageLink = link
         return ipfsUtils.object.cat(link)
       })
       .then((message) => {
+        const index = subscriptionStore.get(this.id)
+
+        if (head === index) {
+          log.info(`${MODULE_NAME}: Remote head was unchanged for ${this.id}`)
+          return true
+        }
         log.info(`${MODULE_NAME}: Delivering new message (${head}) for ${this.id}`)
 
-        // Add the subscription head link as the local index
-        subscriptionStore.put(this.id, head)
-        // Add the new message to the store
-        const storedMessage = messageStore.put(this.id, message, messageLink)
-        // Call the user-supplied callbacks for the new message
-        const result = { id: this.id, message: storedMessage, }
-
+        const result = { id: this.id, link: messageLink, message, }
         try {
           log.info(`${MODULE_NAME}: Calling handlers for ${this.id}`)
+
+          // Call the user-supplied callbacks for the new message
           R.forEach((handler) => handler(result), this._handlers)
+          // Add the subscription head link as the local index
+          this.link = subscriptionStore.put(this.id, head)
+          // Add the new message to the store
+          messageStore.put(this.id, message, messageLink)
+
+          log.info(`${MODULE_NAME}: Handlers successfully called for ${this.id}`)
         } catch (err) {
-          log.err(`${MODULE_NAME}: Error when calling handlers for ${this.id}`)
+          log.err(`${MODULE_NAME}: Error when calling handlers for ${this.id}`, err)
         }
+
         return true
+      })
+      .catch((err) => {
+        log.err(`${MODULE_NAME}: _deliverMessage error for ${this.id}`, err)
+        return Promise.reject(err)
       })
   }
 
@@ -198,21 +168,19 @@ module.exports = class Subscription {
 
     this._backlog.unshift(link)
 
-    return pluckLinkFromIpfsObject(link, 'prev')
+    return ipfsUtils.extractLinkFromIpfsObject(link, 'prev')
       .then((prevLink) => {
         if (localIndex !== prevLink) {
-          log.info(`${MODULE_NAME}: Local index and network head do not match for ${this.id}`)
+          log.info(`${MODULE_NAME}: Local index and remote head do not match for ${this.id}`)
           return this._walkBack(prevLink, localIndex)
         }
-        log.info(`${MODULE_NAME}: Successfully walked back to the next head (${prevLink}) for ${this.id}`)
+        log.info(`${MODULE_NAME}: Found the remote pointer to the local index (${prevLink}) for ${this.id}`)
         return this._deliverBacklog()
       })
       .catch((err) => {
-        log.err(`${MODULE_NAME}: WALK BACK ERR ${this.id}`)
-        console.log(err)
+        log.err(`${MODULE_NAME}: _walkBack error for ${this.id}`, err)
         return Promise.reject(err)
       })
-      // TODO: how do we best handle errors here?
   }
 
   _deliverBacklog() {
@@ -229,8 +197,7 @@ module.exports = class Subscription {
         return this._deliverBacklog()
       })
       .catch((err) => {
-        log.err(`${MODULE_NAME}: DELIVER BACKLOG ERR ${this.id}`)
-        console.log(err)
+        log.err(`${MODULE_NAME}: _deliverBacklog error for ${this.id}`, err)
         return Promise.reject(err)
       })
   }

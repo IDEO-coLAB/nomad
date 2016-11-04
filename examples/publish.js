@@ -16,6 +16,8 @@ const createMessage = () => {
   return `Message: ${idx++}`
 }
 
+console.log('TELL PUBLISH WHAT TO DO IN THE EXAMPLE FILE!')
+
 let instance = null
 node.prepareToPublish()
   // .then((n) => {
@@ -26,14 +28,14 @@ node.prepareToPublish()
   // .catch(() => {
   //   log.err('Error publishing root message')
   // })
-  .then(() => {
-    console.log('READY')
-    console.log('DEMO: ROOT PUBLISHED!!!!')
-    setInterval(() => {
-      instance.publish(createMessage())
-    }, 60000)
-    return node.publish(createMessage())
-  })
+  // .then(() => {
+  //   console.log('READY')
+  //   console.log('DEMO: ROOT PUBLISHED!!!!')
+  //   setInterval(() => {
+  //     instance.publish(createMessage())
+  //   }, 60000)
+  //   return node.publish(createMessage())
+  // })
   // .catch((err) => {
   //   // log.err('err')
   //   // console.log('DEMO: CONNECT ERROR!!!!', e)

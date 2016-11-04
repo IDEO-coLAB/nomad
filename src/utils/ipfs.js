@@ -130,9 +130,6 @@ const object = {
       return Promise.reject(new errors.NomadError('MODULE_NAME: targetDAG was null'))
     }
 
-  console.log('sourceDAG', typeof sourceDAG.toJSON)
-  console.log('targetDAG', typeof targetDAG.toJSON)
-
     const sourceHash = sourceDAG.toJSON().Hash
     const targetHash = targetDAG.toJSON().Hash
 
@@ -156,6 +153,35 @@ const object = {
   },
 }
 
+// Extract a named link from a specified object (data || prev)
+//
+// @param {String} id (b58 ipfs object hash)
+// @param {String} linkName (optional)
+//
+// @return {Promise}
+//
+const extractLinkFromIpfsObject = (id, linkName='data') => {
+  log.info(`${MODULE_NAME}: fetching data for object ${id}`)
+
+  return object.get(id)
+    .then((object) => {
+      const links = object.links
+      if (R.isNil(links)) {
+        log.info(`${MODULE_NAME}: head object is missing a links property`)
+        throw new NomadError('head object is missing links property')
+      }
+
+      const data = R.find(R.propEq('name', linkName), links)
+      if (R.isNil(data)) {
+        log.info(`${MODULE_NAME}: head object is missing a ${linkName} link`)
+        throw new NomadError(`head object is missing a ${linkName} link`)
+      }
+
+      const encoded = base58FromBuffer(data.hash)
+      return Promise.resolve(encoded)
+    })
+}
+
 module.exports = {
   id,
   data,
@@ -163,6 +189,7 @@ module.exports = {
   object,
   base58FromBuffer,
   extractMultihashFromPath,
+  extractLinkFromIpfsObject,
   validDAGNode,
   createDAGNode,
 }
