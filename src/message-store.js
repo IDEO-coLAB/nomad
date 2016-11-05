@@ -1,9 +1,9 @@
 const R = require('ramda')
 
 const log = require('./utils/log')
-// const NomadError = require('./utils/errors')
 
 const MODULE_NAME = 'MESSAGE_STORE'
+
 const MAX_MESSAGE_STORE_SIZE = 5
 
 // Class for a node to work with its subscription messages store
@@ -17,7 +17,7 @@ class MessageStore {
   //
   // @param {String} key (optional <b58_hash>)
   //
-  // @return {Array} messages for the key || {Object} the entire message store
+  // @return {Array} messages for the key || {Object} MessageStore
   //
   get(key) {
     const keyPassed = !R.isNil(key)
@@ -25,7 +25,7 @@ class MessageStore {
 
     if (keyPassed) {
       if (keyExists) {
-        return this.store[key].messages
+        return this.store[key]
       }
       return []
     }
@@ -35,34 +35,34 @@ class MessageStore {
 
   // Update the store with new messages
   //
-  // @param {Array} messages (list of message objects)
-  //  {
-  //    source: <b58_hash>,     // IPNS subscription hash
-  //    message: <some_data>
-  //  }
+  // @param {String} key
+  // @param {Object} message
+  // @param {string} link (hash to look up the message on the network)
   //
-  // @return {Obj} Store object
+  // @return {Object} MessageStore
   //
-  put(messages) {
-    log.info(`${MODULE_NAME}: Adding ${R.length(messages)} new messages to the message store`)
+  put(key, message, link) {
+    log.info(`${MODULE_NAME}: Attempting to add new message for ${key}`)
 
-    R.forEach((msg) => {
-      const keyExists = R.has(msg.source, this.store)
+    const keyExists = R.has(key, this.store)
+    if (!keyExists) {
+      this.store[key] = []
+    }
 
-      if (!keyExists) {
-        this.store[msg.source] = { messages: [] }
-      }
+    const subscriptionStore = this.store[key]
+    if (R.length(subscriptionStore) >= MAX_MESSAGE_STORE_SIZE) {
+      // remove the last message from end
+      subscriptionStore.pop()
+    }
 
-      const subStore = this.store[msg.source]
-      if (R.length(subStore.messages) >= MAX_MESSAGE_STORE_SIZE) {
-        // remove the last message from end
-        subStore.messages.pop()
-      }
-      // add the latest message to the front
-      subStore.messages.unshift(msg.message)
-    }, messages)
+    // add the latest message to the front
+    subscriptionStore.unshift({
+      link,
+      message,
+    })
 
-    return messages
+    log.info(`${MODULE_NAME}: Message added for ${key}`)
+    return subscriptionStore
   }
 }
 
