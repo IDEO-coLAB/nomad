@@ -2,22 +2,6 @@ const R = require('ramda')
 
 const log = require('./log')
 
-// Errors considered fatal; these are used to determine if the error
-// should kill the process
-const FATAL_ERRORS = [IPFSErrorDaemonOffline]
-
-// Determine if an error is an instance of, what we've determined
-// to be, fatal errors
-//
-// @param {Object} err
-//
-// @return {Bool}
-//
-const instanceOfFatalErrors = (err) => {
-  const matchedErrors = R.find(errorClass => err instanceof errorClass, FATAL_ERRORS)
-  return !R.isNil(matchedErrors)
-}
-
 // Class: Nomad error
 //
 class NomadError extends Error {
@@ -38,6 +22,22 @@ class IPFSErrorDaemonOffline extends NomadError {
   constructor() {
     super('IPFS daemon offline')
   }
+}
+
+// Errors considered fatal; these are used to determine if the error
+// should kill the process
+const fatalErrors = [IPFSErrorDaemonOffline]
+
+// Determine if an error is an instance of, what we've determined
+// to be, fatal errors
+//
+// @param {Object} err
+//
+// @return {Bool}
+//
+const instanceOfFatalErrors = (err) => {
+  const matchedErrors = R.find(errorClass => err instanceof errorClass, fatalErrors)
+  return !R.isNil(matchedErrors)
 }
 
 // Handle 'fatal' errors or pass them along
