@@ -1,9 +1,8 @@
-const Q = require('q')
 const R = require('ramda')
 
 const log = require('./utils/log')
 const ipfsUtils = require('./utils/ipfs')
-const { NomadError, passOrDie } = require('./utils/errors')
+const { passOrDie } = require('./utils/errors')
 const messageStore = require('./message-store')
 const subscriptionStore = require('./subscription-store')
 
@@ -51,7 +50,7 @@ module.exports = class Subscription {
       .then(() => this._getHead())
       .then((head) => this._syncHead(head))
       .then(() => {
-        log.info(`${MODULE_NAME}: ${POLL_MILLIS/1000} seconds until next poll for ${this.id}`)
+        log.info(`${MODULE_NAME}: ${POLL_MILLIS / 1000} seconds until next poll for ${this.id}`)
         setTimeout(() => this._poll(), POLL_MILLIS)
       })
       .catch(passOrDie(MODULE_NAME))
@@ -137,12 +136,12 @@ module.exports = class Subscription {
         }
         log.info(`${MODULE_NAME}: Delivering new message (${head}) for ${this.id}`)
 
-        const result = { id: this.id, link: messageLink, message, }
+        const result = { id: this.id, link: messageLink, message }
         try {
           log.info(`${MODULE_NAME}: Calling handlers for ${this.id}`)
 
           // Call the user-supplied callbacks for the new message
-          R.forEach((handler) => handler(result), this._handlers)
+          R.forEach(handler => handler(result), this._handlers)
           // Add the subscription head link as the local index
           this.link = subscriptionStore.put(this.id, head)
           // Add the new message to the store
@@ -164,7 +163,7 @@ module.exports = class Subscription {
   _walkBack(link, localIdx) {
     log.info(`${MODULE_NAME}: Walking back for ${this.id}`)
 
-    let localIndex = localIdx || subscriptionStore.get(this.id)
+    const localIndex = localIdx || subscriptionStore.get(this.id)
 
     this._backlog.unshift(link)
 
@@ -193,9 +192,7 @@ module.exports = class Subscription {
     log.info(`${MODULE_NAME}: Delivering the backlog link ${linkToDeliver} for ${this.id}`)
 
     return this._deliverMessage(linkToDeliver)
-      .then((messages) => {
-        return this._deliverBacklog()
-      })
+      .then(() => this._deliverBacklog())
       .catch((err) => {
         log.err(`${MODULE_NAME}: _deliverBacklog error for ${this.id}`, err)
         return Promise.reject(err)
@@ -205,6 +202,9 @@ module.exports = class Subscription {
   _removeHandler(handler) {
     return () => {
       const idxToRemove = R.indexOf(handler, this._handlers)
+      /* prefer-const: 0 */
+      // Lint note: Do not set newHandlers as a const because we need to splice it
+      // TODO: make a copy and set the node backlog as the new object
       let newHandlers = this._handlers.slice(0)
       newHandlers.splice(idxToRemove, 1)
       this._handlers = newHandlers

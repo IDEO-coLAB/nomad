@@ -5,7 +5,7 @@ const streamToPromise = require('stream-to-promise')
 const { DAGLink, DAGNode } = require('ipfs-merkle-dag')
 
 const log = require('./log')
-const errors = require('./errors')
+const { NomadError, IPFSErrorDaemonOffline } = require('./errors')
 
 const ipfs = ipfsApi()
 
@@ -25,7 +25,7 @@ const mapError = (err) => {
 
   switch (err.code) {
     case IPFSConnectionRefusedErrorCode:
-      newError = new errors.IPFSErrorDaemonOffline()
+      newError = new IPFSErrorDaemonOffline()
       log.err(`${MODULE_NAME}: ${newError.toErrorString()}`)
       return Promise.reject(newError)
     default:
@@ -40,7 +40,7 @@ const mapError = (err) => {
 //
 // @return {Object} DAGNode
 //
-const createDAGNode = (obj) => {
+const createDAGNode = obj => {
   // TODO: sanity check object properties!!
   // obj is a stringified DAGNode object, not the class instance yet,
   // but this explains the capitalization for property access
@@ -123,11 +123,11 @@ const object = {
     log.info(`${MODULE_NAME}: Adding '${linkName}' link to an object`)
 
     if (R.isNil(sourceDAG)) {
-      return Promise.reject(new errors.NomadError('MODULE_NAME: sourceDAG was null'))
+      return Promise.reject(new NomadError('MODULE_NAME: sourceDAG was null'))
     }
 
     if (R.isNil(targetDAG)) {
-      return Promise.reject(new errors.NomadError('MODULE_NAME: targetDAG was null'))
+      return Promise.reject(new NomadError('MODULE_NAME: targetDAG was null'))
     }
 
     const sourceHash = sourceDAG.toJSON().Hash
@@ -155,29 +155,29 @@ const object = {
 
 // Extract a named link from a specified object (data || prev)
 //
-// @param {String} id (b58 ipfs object hash)
+// @param {String} hash (b58 ipfs object hash)
 // @param {String} linkName (optional)
 //
 // @return {Promise}
 //
-const extractLinkFromIpfsObject = (id, linkName='data') => {
-  log.info(`${MODULE_NAME}: fetching data for object ${id}`)
+const extractLinkFromIpfsObject = (hash, linkName = 'data') => {
+  log.info(`${MODULE_NAME}: fetching data for object ${hash}`)
 
-  return object.get(id)
-    .then((object) => {
-      const links = object.links
+  return object.get(hash)
+    .then((ipfsObj) => {
+      const links = ipfsObj.links
       if (R.isNil(links)) {
         log.info(`${MODULE_NAME}: head object is missing a links property`)
         throw new NomadError('head object is missing links property')
       }
 
-      const data = R.find(R.propEq('name', linkName), links)
-      if (R.isNil(data)) {
+      const linkData = R.find(R.propEq('name', linkName), links)
+      if (R.isNil(linkData)) {
         log.info(`${MODULE_NAME}: head object is missing a ${linkName} link`)
         throw new NomadError(`head object is missing a ${linkName} link`)
       }
 
-      const encoded = base58FromBuffer(data.hash)
+      const encoded = base58FromBuffer(linkData.hash)
       return Promise.resolve(encoded)
     })
 }

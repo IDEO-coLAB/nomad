@@ -5,7 +5,8 @@
   },
   "rules": {
     "semi": ["error", "never"],
-    "no-param-reassign": 0
+    "no-param-reassign": 0,
+    "no-underscore-dangle": 0
   },
   "env": {
     "browser": true,

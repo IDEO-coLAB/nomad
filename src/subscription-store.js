@@ -56,4 +56,7 @@ const put = (id, link) => {
   return link
 }
 
-module.exports = { get, put, }
+module.exports = {
+  get,
+  put,
+}

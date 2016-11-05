@@ -3,7 +3,6 @@ const R = require('ramda')
 
 const log = require('./utils/log')
 const config = require('./utils/config')
-const errors = require('./utils/errors')
 const ipfsUtils = require('./utils/ipfs')
 
 const MODULE_NAME = 'PUBLISH'
@@ -60,7 +59,7 @@ const publishLatestNodeHead = (dag, node) => {
       node.head = headDAG
       return ipfsUtils.name.publish(headDAG)
     })
-    .then((published) => {
+    .then(() => {
       // write the head to disk
       fs.writeFileSync(NODE_HEAD_PATH, JSON.stringify(node.head))
       // return the full node

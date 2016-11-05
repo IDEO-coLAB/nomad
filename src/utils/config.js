@@ -27,11 +27,14 @@ const isAtomic = (function checkAtomicity() {
   return false
 }())
 
-const debug = R.equals(typeof process.env.DEBUG, 'boolean') ? Boolean(process.env.DEBUG) : false
+const debug = R.equals(typeof process.env.DEBUG, 'boolean') ?
+  Boolean(process.env.DEBUG) : false
 
 // TODO: validate subscription b58 strings
-const subscriptionPlaceholders = R.map(s => null, userConfigJSON.subscriptions)
-const subscriptions = isAtomic ? {} : R.zipObj(userConfigJSON.subscriptions, subscriptionPlaceholders)
+const subscriptionPlaceholders = R.map(() => null, userConfigJSON.subscriptions)
+
+const subscriptions = isAtomic ?
+  {} : R.zipObj(userConfigJSON.subscriptions, subscriptionPlaceholders)
 
 module.exports = {
   debug,
