@@ -6,6 +6,7 @@ const NomadError = require('./errors')
 
 const userConfigPath = path.resolve(__dirname, './../../nomad.json')
 const nodeHeadPath = path.resolve(__dirname, './../../repo/node-head.json')
+const subscriptionHeadsPath = path.resolve(__dirname, './../../repo/subscription-heads.json')
 
 let userConfigJSON
 
@@ -26,15 +27,21 @@ const isAtomic = (function checkAtomicity() {
   return false
 }())
 
-const debug = R.equals(typeof process.env.DEBUG, 'boolean') ? Boolean(process.env.DEBUG) : false
+const debug = R.equals(typeof process.env.DEBUG, 'boolean') ?
+  Boolean(process.env.DEBUG) : false
 
-const subscriptions = isAtomic ? [] : userConfigJSON.subscriptions
+// TODO: validate subscription b58 strings
+const subscriptionPlaceholders = R.map(() => null, userConfigJSON.subscriptions)
+
+const subscriptions = isAtomic ?
+  {} : R.zipObj(userConfigJSON.subscriptions, subscriptionPlaceholders)
 
 module.exports = {
   debug,
   isAtomic,
   subscriptions,
   path: {
-    head: nodeHeadPath,
+    nodeHead: nodeHeadPath,
+    subscriptionHeads: subscriptionHeadsPath
   },
 }

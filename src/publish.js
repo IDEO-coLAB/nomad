@@ -6,7 +6,8 @@ const config = require('./utils/config')
 const ipfsUtils = require('./utils/ipfs')
 
 const MODULE_NAME = 'PUBLISH'
-const NODE_HEAD_PATH = config.path.head
+
+const NODE_HEAD_PATH = config.path.nodeHead
 
 // Initialize a new sensor head object. This is a blank IPFS DAG object.
 //
@@ -40,7 +41,6 @@ const initLatestNodeHead = (data) => {
 const linkLatestNodeHeadToPrev = (sourceDAG, targetDAG) => {
   const linkName = 'prev'
   log.info(`${MODULE_NAME}: Adding prev link to new sensor head`)
-
   return ipfsUtils.object.link(sourceDAG, targetDAG, linkName)
 }
 
@@ -56,12 +56,10 @@ const publishLatestNodeHead = (dag, node) => {
 
   return ipfsUtils.object.put(dag)
     .then((headDAG) => {
-      node.head.DAG = headDAG
+      node.head = headDAG
       return ipfsUtils.name.publish(headDAG)
     })
-    .then((published) => {
-      // { Name: <cur node id>, Value: <new node head hash> }
-      node.head.path = `/ipfs/${published.Value}`
+    .then(() => {
       // write the head to disk
       fs.writeFileSync(NODE_HEAD_PATH, JSON.stringify(node.head))
       // return the full node
@@ -95,8 +93,12 @@ const publishNodeRoot = (data, node) => {
 const publishNodeData = (data, node) => {
   log.info(`${MODULE_NAME}: Publishing sensor data`)
 
+  if (!ipfsUtils.validDAGNode(node.head)) {
+    node.head = ipfsUtils.createDAGNode(node.head)
+  }
+
   return initLatestNodeHead(data)
-    .then(newDAG => linkLatestNodeHeadToPrev(node.head.DAG, newDAG))
+    .then(newDAG => linkLatestNodeHeadToPrev(node.head, newDAG))
     .then(newDAG => publishLatestNodeHead(newDAG, node))
 }
 
