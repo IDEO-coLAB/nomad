@@ -10,7 +10,7 @@ const { publish, publishRoot } = require('./publish')
 const log = require('./utils/log')
 const config = require('./utils/config')
 const { id } = require('./utils/ipfs')
-const { passOrDie } = require('./utils/errors')
+const { passOrDie, NomadError } = require('./utils/errors')
 
 const MODULE_NAME = 'NODE'
 
@@ -18,17 +18,23 @@ const NODE_HEAD_PATH = config.path.nodeHead
 
 // Class: Node
 //
+// @param: [PEER IDs]
 module.exports = class Node {
-  constructor() {
-    this.isAtomic = config.isAtomic
+  constructor(userConfig = []) {
+    if (!R.isArrayLike(userConfig)) { throw new NomadError('Nomad node constructor must be called without an argument or with an array of subscription IDs') }
+
     this.isOnline = false
     this.identity = null
+
+    const hydratedUserConfig = R.map((sub) => {
+      return { sub: null }
+    }, userConfig)
 
     this.subscriptions = R.mapObjIndexed((sub, subId) => {
       const newSub = new Subscription(subId)
       newSub.start()
       return newSub
-    }, config.subscriptions)
+    }, hydratedUserConfig)
 
     // Try setting the node head from disk
     this.head = null
