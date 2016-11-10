@@ -2,10 +2,10 @@ const bs58 = require('bs58')
 const ipfsApi = require('ipfs-api')
 const R = require('ramda')
 const streamToPromise = require('stream-to-promise')
-const { DAGLink } = require('ipfs-merkle-dag')
+const { DAGLink, DAGNode } = require('ipfs-merkle-dag')
 
 const log = require('./log')
-const errors = require('./errors')
+const { NomadError, IPFSErrorDaemonOffline } = require('./errors')
 
 const ipfs = ipfsApi()
 
@@ -25,13 +25,39 @@ const mapError = (err) => {
 
   switch (err.code) {
     case IPFSConnectionRefusedErrorCode:
-      newError = new errors.IPFSErrorDaemonOffline()
-      log.err(newError.toErrorString())
+      newError = new IPFSErrorDaemonOffline()
+      log.err(`${MODULE_NAME}: ${newError.toErrorString()}`)
       return Promise.reject(newError)
     default:
-      log.err(`${MODULE_NAME}: Unhandled IPFS error, ${err.message}`)
+      log.err(`${MODULE_NAME}: Unhandled IPFS error: ${err.message}`)
       return Promise.reject(err)
   }
+}
+
+// Create a valid DAGNode from an object
+//
+// @param {Object} obj
+//
+// @return {Object} DAGNode
+//
+const createDAGNode = obj => {
+  // TODO: sanity check object properties!!
+  // obj is a stringified DAGNode object, not the class instance yet,
+  // but this explains the capitalization for property access
+  return new DAGNode(obj.Data, obj.Links)
+}
+
+// Check if an object is a valid DAGNode
+//
+// @param {Object} obj
+//
+// @return {Bool}
+//
+const validDAGNode = (obj) => {
+  if (obj instanceof DAGNode) {
+    return true
+  }
+  return false
 }
 
 // ID Utils
@@ -59,11 +85,11 @@ const name = {
     const hash = dag.toJSON().Hash
     log.info(`${MODULE_NAME}: Publishing ${hash} via IPNS`)
     return ipfs.name.publish(hash)
-    .then(function(res) {
-      log.info(`${MODULE_NAME}: Successfully published via IPNS`)
-      return Promise.resolve(res)
-    })
-    .catch(mapError)
+      .then((res) => {
+        log.info(`${MODULE_NAME}: Successfully published via IPNS`)
+        return Promise.resolve(res)
+      })
+      .catch(mapError)
   },
 }
 
@@ -97,11 +123,11 @@ const object = {
     log.info(`${MODULE_NAME}: Adding '${linkName}' link to an object`)
 
     if (R.isNil(sourceDAG)) {
-      return Promise.reject(new errors.NomadError(`MODULE_NAME: sourceDAG was null`))
+      return Promise.reject(new NomadError('MODULE_NAME: sourceDAG was null'))
     }
 
     if (R.isNil(targetDAG)) {
-      return Promise.reject(new errors.NomadError(`MODULE_NAME: targetDAG was null`))
+      return Promise.reject(new NomadError('MODULE_NAME: targetDAG was null'))
     }
 
     const sourceHash = sourceDAG.toJSON().Hash
@@ -127,4 +153,43 @@ const object = {
   },
 }
 
-module.exports = { id, data, name, object, base58FromBuffer }
+// Extract a named link from a specified object (data || prev)
+//
+// @param {String} hash (b58 ipfs object hash)
+// @param {String} linkName (optional)
+//
+// @return {Promise}
+//
+const extractLinkFromIpfsObject = (hash, linkName = 'data') => {
+  log.info(`${MODULE_NAME}: fetching data for object ${hash}`)
+
+  return object.get(hash)
+    .then((ipfsObj) => {
+      const links = ipfsObj.links
+      if (R.isNil(links)) {
+        log.info(`${MODULE_NAME}: Object is missing a links property`)
+        throw new NomadError('Object is missing links property')
+      }
+
+      const linkData = R.find(R.propEq('name', linkName), links)
+      if (R.isNil(linkData)) {
+        log.info(`${MODULE_NAME}: Object is missing a ${linkName} link`)
+        throw new NomadError(`Object is missing a ${linkName} link`)
+      }
+
+      const encoded = base58FromBuffer(linkData.hash)
+      return Promise.resolve(encoded)
+    })
+}
+
+module.exports = {
+  id,
+  data,
+  name,
+  object,
+  base58FromBuffer,
+  extractMultihashFromPath,
+  extractLinkFromIpfsObject,
+  validDAGNode,
+  createDAGNode,
+}

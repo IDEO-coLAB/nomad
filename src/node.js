@@ -1,89 +1,95 @@
+const fs = require('fs')
 const R = require('ramda')
 
-const { setHead, publish, publishRoot } = require('./publish')
-const { getNewSubscriptionMessages } = require('./subscribe')
+const Subscription = require('./subscription')
+const { publish, publishRoot } = require('./publish')
+const { getHead } = require('./node-cache')
 const log = require('./utils/log')
-const config = require('./utils/config')
 const { id } = require('./utils/ipfs')
-const errors = require('./utils/errors')
-const taskQueue = require('task-queue')
+const { passOrDie, NomadError } = require('./utils/errors')
 
-const MODULE_NAME = 'SENSOR'
-const POLL_MILLIS = 1000 * 10
+const MODULE_NAME = 'NODE'
 
-const fatalErrors = [errors.IPFSErrorDaemonOffline]
-
-const instanceOfFatalErrors = err => {
-  const matchedErrors = R.find(errorClass => err instanceof errorClass, fatalErrors)
-  return !R.isNil(matchedErrors)
-}
-  
-const passErrorOrDie = (err) => {
-  if (err instanceof errors.NomadError) {
-    log.err(err.toErrorString())
-  } else {
-    log.err(err)
-  }
-
-  if (instanceOfFatalErrors(err)) {
-    log.err('exiting')
-    process.exit(1)
-  }
-
-  return Promise.reject(err)
-}
-
+// Class: Node
+//
+// @param {Object} userConfig (Array of peerIds)
+//
 module.exports = class Node {
-  constructor() {
-    this.isAtomic = config.isAtomic
-    this.subscriptions = config.subscriptions
-
-    this.isOnline = false
+  constructor(userConfig = {}) {
     this.identity = null
-
-    this.tasks = new taskQueue.Queue({ capacity: 5, concurrency: 1 })
-    this.tasks.start()
-
-    this.head = { DAG: null, path: null }
+    this.subscriptions = null
+    this.head = getHead()
   }
 
+  // Connect the sensor to the network and set the node's identity
+  //
+  // @return {Promise} Node
+  //
   prepareToPublish() {
     log.info(`${MODULE_NAME}: Connecting sensor to the network`)
-    setHead(this)
 
+    // TODO: tidy this up into an connection-status checker fn
+    // since it gives the node an identity, I think it is ok to wrap it in
     return id()
       .then((identity) => {
-        log.info(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)
-
         this.identity = identity
-        this.isOnline = true
+        log.info(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)
         return this
       })
-      .catch(passErrorOrDie)
+      .catch(passOrDie(MODULE_NAME))
   }
 
+  // Publish data to the network
+  //
+  // @param {Object} data
+  //
+  // @return {Promise} Node
+  //
   publish(data) {
     log.info(`${MODULE_NAME}: Publishing new data`)
-    return publish(data, this).catch(passErrorOrDie)
+    return publish(data, this)
+      .catch(passOrDie(MODULE_NAME))
   }
 
+  // Publish the node's data root to the network
+  //
+  // @param {Object} data
+  //
+  // @return {Promise} Node
+  //
   publishRoot(data) {
     log.info(`${MODULE_NAME}: Publishing new root`)
-    return publishRoot(data, this).catch(passErrorOrDie)
+    return publishRoot(data, this)
+      .catch(passOrDie(MODULE_NAME))
   }
 
-  // does this need to return anything since we're using callbacks?
-  onMessage(cb) {
-    log.info(`${MODULE_NAME}: Subscribing to ${R.length(this.subscriptions)} subscriptions`)
-    getNewSubscriptionMessages(this.subscriptions, cb)
-    this.subscribePollHandle = setInterval(() => {
-      if (this.tasks.size() < 1) {
-        // only poll if the previous poll finished, otherwise wait until next pass
-        // through
-        this.tasks.enqueue(getNewSubscriptionMessages, { args: [this.subscriptions, cb] })
-      } else {
-        log.info(`skipping poll because task queue has length ${this.tasks.size()}`)
-      }
-    }, POLL_MILLIS)
+  // Add a handler function to each subscription subscriptions and start
+  // each subscription poll
+  //
+  // @param {Array} subscriptions ([peerId, peerId, ...])
+  // @param {Func} cb
+  //
+  subscribe(subscriptions, cb) {
+    if (typeof cb !== 'function') {
+      throw new NomadError('callback must be a function')
+    }
+
+    let subs = subscriptions
+    if (typeof subs === 'string') {
+      subs = [subs]
+    }
+    // TODO: More sanity checking (e.g. for b58 strings)
+
+    // TODO: Handle user-passed subscriptions in the constructor!
+    this.subscriptions = {}
+
+    R.forEach((subId) => {
+      const newSub = new Subscription(subId)
+      newSub.addHandler(cb)
+      newSub.start()
+      this.subscriptions[subId] = newSub
+    }, subscriptions)
+
+    log.info(`${MODULE_NAME}: Handler registered for ${R.length(subscriptions)} subscriptions`)
   }
 }
