@@ -63,33 +63,44 @@ module.exports = class Node {
       .catch(passOrDie(MODULE_NAME))
   }
 
-  // Add a handler function to each subscription subscriptions and start
-  // each subscription poll
+  // Add new subscription(s) to the node, attach an event handler
+  // and start polling for each new subscription
   //
-  // @param {Array} subscriptions ([peerId, peerId, ...])
+  // @param {Array || String} subscriptionIds ([peerId, peerId, ...] or peerId)
   // @param {Func} cb
   //
-  subscribe(subscriptions, cb) {
+  subscribe(subscriptionIds, cb) {
     if (typeof cb !== 'function') {
-      throw new NomadError('callback must be a function')
+      throw new NomadError('Callback must be a function')
     }
 
-    let subs = subscriptions
-    if (typeof subs === 'string') {
-      subs = [subs]
+    let newSubscriptions = subscriptionIds
+    if (typeof newSubscriptions === 'string') {
+      newSubscriptions = [newSubscriptions]
     }
     // TODO: More sanity checking (e.g. for b58 strings)
 
-    // TODO: Handle user-passed subscriptions in the constructor!
-    this.subscriptions = {}
+    let nodeSubscriptions = Object.assign({}, this.subscriptions)
 
     R.forEach((subId) => {
-      const newSub = new Subscription(subId)
-      newSub.addHandler(cb)
-      newSub.start()
-      this.subscriptions[subId] = newSub
-    }, subscriptions)
+      if (!R.has(subId, nodeSubscriptions)) {
+        log.info(`${MODULE_NAME}: ${subId}: New subscription handler registered`)
+        const newSub = new Subscription(subId)
+        newSub.addHandler(cb)
+        newSub.start()
+        nodeSubscriptions[subId] = newSub
+      }
+    }, newSubscriptions)
 
-    log.info(`${MODULE_NAME}: Handler registered for ${R.length(subscriptions)} subscriptions`)
+    // Set the new subscriptions on the node
+    this.subscriptions = nodeSubscriptions
+  }
+
+  // Remove a subscription from the node
+  //
+  // @param {String} subscriptionId (peerId)
+  //
+  unsubscribe(subscriptionId) {
+
   }
 }

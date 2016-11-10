@@ -46,9 +46,9 @@ describe('Black box test of publish then subscribe:', () => {
       node.publishRoot('root message').then(() => { done() })
     })
 
-    it('should succeed when publishing a message after publishing a root message', (done) => {
-      node.publish('second message').then(() => { done() })
-    })
+    // it('should succeed when publishing a message after publishing a root message', (done) => {
+    //   node.publish('second message').then(() => { done() })
+    // })
   })
 
   describe('subscribe: ', () => {

@@ -44,7 +44,7 @@ class MessageStore {
   // @return {Object} MessageStore
   //
   put(key, message, link) {
-    log.info(`${MODULE_NAME}: Attempting to add new message for ${key}`)
+    log.info(`${MODULE_NAME}: ${key}: Adding new message`)
 
     const keyExists = R.has(key, this.store)
     if (!keyExists) {
@@ -63,7 +63,7 @@ class MessageStore {
       message,
     })
 
-    log.info(`${MODULE_NAME}: Message added for ${key}`)
+    log.info(`${MODULE_NAME}: ${key}: Message added`)
     return subscriptionStore
   }
 }
