@@ -5,8 +5,8 @@ const R = require('ramda')
 const NomadError = require('./errors')
 
 const userConfigPath = path.resolve(__dirname, './../../nomad.json')
-const nodeHeadPath = path.resolve(__dirname, './../../repo/node-head.json')
-const subscriptionHeadsPath = path.resolve(__dirname, './../../repo/subscription-heads.json')
+const cachedNodeHeadPath = path.resolve(__dirname, './../../cache/node-head.json')
+const cachedSubscriptionHeadsPath = path.resolve(__dirname, './../../cache/subscription-heads.json')
 
 let userConfigJSON
 
@@ -41,7 +41,7 @@ module.exports = {
   isAtomic,
   subscriptions,
   path: {
-    nodeHead: nodeHeadPath,
-    subscriptionHeads: subscriptionHeadsPath
+    cachedNodeHead: cachedNodeHeadPath,
+    subscriptionHeads: cachedSubscriptionHeadsPath
   },
 }

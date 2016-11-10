@@ -4,10 +4,9 @@ const R = require('ramda')
 const log = require('./utils/log')
 const config = require('./utils/config')
 const ipfsUtils = require('./utils/ipfs')
+const { setHead } = require('./node-cache')
 
 const MODULE_NAME = 'PUBLISH'
-
-const NODE_HEAD_PATH = config.path.nodeHead
 
 // Initialize a new sensor head object. This is a blank IPFS DAG object.
 //
@@ -53,15 +52,18 @@ const linkLatestNodeHeadToPrev = (sourceDAG, targetDAG) => {
 //
 const publishLatestNodeHead = (dag, node) => {
   log.info(`${MODULE_NAME}: Publishing new sensor head: ${dag.toJSON().Hash} with links`, dag.toJSON().Links)
+  let newHead
 
   return ipfsUtils.object.put(dag)
     .then((headDAG) => {
-      node.head = headDAG
+      newHead = headDAG
       return ipfsUtils.name.publish(headDAG)
     })
     .then(() => {
-      // write the head to disk
-      fs.writeFileSync(NODE_HEAD_PATH, JSON.stringify(node.head))
+      // write the new head to cache
+      setHead(newHead)
+      // Once written to disk, set the new head on the node
+      node.head = newHead
       // return the full node
       return node
     })

@@ -1,12 +1,9 @@
 const fs = require('fs')
 const R = require('ramda')
-// const taskQueue = require('task-queue')
 
 const Subscription = require('./subscription')
-// const { getLatest } = require('./subscribe')
-// const messageStore = require('./message-store')
-
 const { publish, publishRoot } = require('./publish')
+const { getHead } = require('./node-cache')
 const log = require('./utils/log')
 const config = require('./utils/config')
 const { id } = require('./utils/ipfs')
@@ -14,32 +11,19 @@ const { passOrDie } = require('./utils/errors')
 
 const MODULE_NAME = 'NODE'
 
-const NODE_HEAD_PATH = config.path.nodeHead
-
 // Class: Node
 //
 module.exports = class Node {
   constructor() {
-    this.isAtomic = config.isAtomic
-    this.isOnline = false
     this.identity = null
 
     this.subscriptions = R.mapObjIndexed((sub, subId) => {
       const newSub = new Subscription(subId)
-      newSub.start()
+      // newSub.start()
       return newSub
     }, config.subscriptions)
 
-    // Try setting the node head from disk
-    this.head = null
-    try {
-      // TODO: create file if it does not exist
-      const buffer = fs.readFileSync(NODE_HEAD_PATH)
-      this.head = JSON.parse(buffer.toString())
-      log.info(`${MODULE_NAME}: Set node head from disk`)
-    } catch (err) {
-      log.info(`${MODULE_NAME}: No existing node head on disk`)
-    }
+    this.head = getHead()
   }
 
   // Connect the sensor to the network and set the node's identity
@@ -53,7 +37,6 @@ module.exports = class Node {
       .then((identity) => {
         log.info(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)
         this.identity = identity
-        this.isOnline = true
         return this
       })
       .catch(passOrDie(MODULE_NAME))

@@ -3,8 +3,8 @@ const R = require('ramda')
 const log = require('./utils/log')
 const ipfsUtils = require('./utils/ipfs')
 const { passOrDie } = require('./utils/errors')
-const messageStore = require('./message-store')
-const subscriptionStore = require('./subscription-store')
+const messageCache = require('./message-cache')
+const subscriptionCache = require('./subscription-cache')
 
 const MODULE_NAME = 'SUBSCRIPTION'
 
@@ -23,7 +23,7 @@ module.exports = class Subscription {
     // gets out of sync from the network's subscription head
     this._backlog = []
     // set the latest head from disk
-    this.link = subscriptionStore.get(subscriptionId) || null
+    this.link = subscriptionCache.get(subscriptionId) || null
   }
 
   addHandler(handler) {
@@ -90,7 +90,7 @@ module.exports = class Subscription {
   _syncHead(head) {
     log.info(`${MODULE_NAME}: Syncing local index and remote head for ${this.id}`)
 
-    const localIndex = subscriptionStore.get(this.id)
+    const localIndex = subscriptionCache.get(this.id)
 
     // if there is no locally stored subscription head, write it to disk and continue
     if (R.isNil(localIndex)) {
@@ -128,7 +128,7 @@ module.exports = class Subscription {
         return ipfsUtils.object.cat(link)
       })
       .then((message) => {
-        const index = subscriptionStore.get(this.id)
+        const index = subscriptionCache.get(this.id)
 
         if (head === index) {
           log.info(`${MODULE_NAME}: Remote head was unchanged for ${this.id}`)
@@ -143,9 +143,9 @@ module.exports = class Subscription {
           // Call the user-supplied callbacks for the new message
           R.forEach(handler => handler(result), this._handlers)
           // Add the subscription head link as the local index
-          this.link = subscriptionStore.put(this.id, head)
+          this.link = subscriptionCache.put(this.id, head)
           // Add the new message to the store
-          messageStore.put(this.id, message, messageLink)
+          messageCache.put(this.id, message, messageLink)
 
           log.info(`${MODULE_NAME}: Handlers successfully called for ${this.id}`)
         } catch (err) {
@@ -163,7 +163,7 @@ module.exports = class Subscription {
   _walkBack(link, localIdx) {
     log.info(`${MODULE_NAME}: Walking back for ${this.id}`)
 
-    const localIndex = localIdx || subscriptionStore.get(this.id)
+    const localIndex = localIdx || subscriptionCache.get(this.id)
 
     this._backlog.unshift(link)
 

@@ -2,9 +2,11 @@ const R = require('ramda')
 
 const log = require('./utils/log')
 
-const MODULE_NAME = 'MESSAGE_STORE'
+const MODULE_NAME = 'MESSAGE_CACHE'
 
 const MAX_MESSAGE_STORE_SIZE = 5
+
+// Note: this is currently an in-process-memory cache
 
 // Class for a node to work with its subscription messages store
 //

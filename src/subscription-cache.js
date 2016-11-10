@@ -3,7 +3,7 @@ const fs = require('fs')
 const config = require('./utils/config')
 const log = require('./utils/log')
 
-const MODULE_NAME = 'SUBSCRIPTION_STORE'
+const MODULE_NAME = 'SUBSCRIPTION_CACHE'
 
 const SUB_HEADS_PATH = config.path.subscriptionHeads
 
