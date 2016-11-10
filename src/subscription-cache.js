@@ -6,11 +6,11 @@ const { NomadError } = require('./utils/errors')
 
 const MODULE_NAME = 'SUBSCRIPTION_CACHE'
 
-const SUB_HEADS_PATH = config.path.cachedSubscriptionHeads
+const CACHED_SUB_HEADS_PATH = config.path.cachedSubscriptionHeads
 
 const initSubscriptionCache = () => {
-  fs.writeFileSync(SUB_HEADS_PATH, `${JSON.stringify({})}\r\n`)
-  return fs.readFileSync(SUB_HEADS_PATH)
+  fs.writeFileSync(CACHED_SUB_HEADS_PATH, `${JSON.stringify({})}\r\n`)
+  return fs.readFileSync(CACHED_SUB_HEADS_PATH)
 }
 
 // Get a link to the subscription link cache
@@ -26,7 +26,7 @@ const get = (id) => {
 
   // If the file doesn't exist, create it
   try {
-    buffer = fs.readFileSync(SUB_HEADS_PATH)
+    buffer = fs.readFileSync(CACHED_SUB_HEADS_PATH)
   } catch (err) {
     buffer = initSubscriptionCache()
   }
@@ -50,12 +50,18 @@ const get = (id) => {
 const set = (id, link) => {
   log.info(`${MODULE_NAME}: ${id}: Set link ${link}`)
 
+  let links
   // TODO: handle if the file is missing somehow
-  const buffer = fs.readFileSync(SUB_HEADS_PATH)
-  const links = JSON.parse(buffer.toString())
+  const buffer = fs.readFileSync(CACHED_SUB_HEADS_PATH)
+
+  try {
+    links = JSON.parse(buffer.toString())
+  } catch (err) {
+    links = {}
+  }
 
   links[id] = link
-  fs.writeFileSync(SUB_HEADS_PATH, `${JSON.stringify(links)}\r\n`)
+  fs.writeFileSync(CACHED_SUB_HEADS_PATH, `${JSON.stringify(links)}\r\n`)
 
   return link
 }

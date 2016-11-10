@@ -48,7 +48,9 @@ module.exports = class Subscription {
       })
       .catch(passOrDie(MODULE_NAME))
       .catch((err) => {
-        log.err(`${MODULE_NAME}: ${this.id}: Poll error`, err)
+        // TODO: Unify error propagation up the top polling function
+        // decide how to pass Nomad Errors from within
+        log.err(`${MODULE_NAME}: ${this.id}: _poll error`, err)
         setTimeout(() => this._poll(), POLL_MILLIS)
       })
   }
@@ -69,8 +71,8 @@ module.exports = class Subscription {
         return Promise.resolve(head)
       })
       .catch((err) => {
-        log.err(`${MODULE_NAME}: ${this.id}: _getHead error`, err)
-        return Promise.reject(err)
+        log.err(`${MODULE_NAME}: ${this.id}: _getHead error `, err.message)
+        return Promise.reject(err.message)
       })
   }
 
@@ -117,6 +119,8 @@ module.exports = class Subscription {
   _deliverMessage(head) {
     let messageLink
 
+    // TODO: tighten up the logic around message fetch and delivery
+    // to avoid unnecessary network calls, this can be improved
     return ipfsUtils.extractLinkFromIpfsObject(head)
       .then((link) => {
         messageLink = link
@@ -136,7 +140,6 @@ module.exports = class Subscription {
         try {
           log.info(`${MODULE_NAME}: ${this.id}: Calling handler`)
 
-
           // Call the user-supplied callbacks for the new message
           R.forEach(handler => handler(result), this._handlers)
           // Add the subscription head link as the cached head
@@ -144,8 +147,6 @@ module.exports = class Subscription {
 
           // Add the new message to the store
           messageCache.put(this.id, message, messageLink)
-
-
 
           log.info(`${MODULE_NAME}: ${this.id}: Handler successfully called`)
         } catch (err) {

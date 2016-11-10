@@ -62,14 +62,14 @@ const validDAGNode = (obj) => {
 
 // ID Utils
 const id = () => {
-  log.info(`${MODULE_NAME}: Checking connection to network`)
+  // log.info(`${MODULE_NAME}: Checking connection to network`)
   return ipfs.id().catch(mapError)
 }
 
 // Data Utils
 const data = {
   add: (value) => {
-    log.info(`${MODULE_NAME}: Getting a hash for newly added data`)
+    // log.info(`${MODULE_NAME}: Getting a hash for newly added data`)
     return ipfs.add(new Buffer(value, 'utf8')).catch(mapError)
   },
 }
@@ -77,16 +77,16 @@ const data = {
 // Name Utils
 const name = {
   resolve: (hash) => {
-    log.info(`${MODULE_NAME}: Resolving hash ${hash}`)
+    // log.info(`${MODULE_NAME}: Resolving hash ${hash}`)
     return ipfs.name.resolve(hash).catch(mapError)
   },
 
   publish: (dag) => {
     const hash = dag.toJSON().Hash
-    log.info(`${MODULE_NAME}: Publishing ${hash} via IPNS`)
+    // log.info(`${MODULE_NAME}: Publishing ${hash} via IPNS`)
     return ipfs.name.publish(hash)
       .then((res) => {
-        log.info(`${MODULE_NAME}: Successfully published via IPNS`)
+        // log.info(`${MODULE_NAME}: Successfully published via IPNS`)
         return Promise.resolve(res)
       })
       .catch(mapError)
@@ -98,29 +98,29 @@ const object = {
   // Currently expect lookup to be a DAG path...generify this
   // TODO: abstract!
   get: (lookup) => {
-    log.info(`${MODULE_NAME}: Getting object ${lookup}`)
+    // log.info(`${MODULE_NAME}: Getting object ${lookup}`)
     return ipfs.object.get(bufferFromBase58(extractMultihashFromPath(lookup))).catch(mapError)
   },
 
   // Currently expect lookup to be a DAG path...generify this
   // TODO: abstract!
   data: (lookup) => {
-    log.info(`${MODULE_NAME}: Getting object data for ${lookup}`)
+    // log.info(`${MODULE_NAME}: Getting object data for ${lookup}`)
     return ipfs.object.data(bufferFromBase58(extractMultihashFromPath(lookup))).catch(mapError)
   },
 
   put: (dag) => {
-    log.info(`${MODULE_NAME}: Putting a DAG object`)
+    // log.info(`${MODULE_NAME}: Putting a DAG object`)
     return ipfs.object.put(dag).catch(mapError)
   },
 
   create: () => {
-    log.info(`${MODULE_NAME}: Creating a new DAG object`)
+    // log.info(`${MODULE_NAME}: Creating a new DAG object`)
     return ipfs.object.new().catch(mapError)
   },
 
   link: (sourceDAG, targetDAG, linkName) => {
-    log.info(`${MODULE_NAME}: Adding '${linkName}' link to an object`)
+    // log.info(`${MODULE_NAME}: Adding '${linkName}' link to an object`)
 
     if (R.isNil(sourceDAG)) {
       return Promise.reject(new NomadError('MODULE_NAME: sourceDAG was null'))
@@ -145,7 +145,7 @@ const object = {
 
   // Currently expect DAG hash
   cat: (lookup) => {
-    log.info(`${MODULE_NAME}: Cat-ing ${lookup}`)
+    // log.info(`${MODULE_NAME}: Cat-ing ${lookup}`)
     return ipfs.cat(lookup)
       .then(readStream => streamToPromise(readStream))
       .then(buffer => buffer.toString())
@@ -161,19 +161,19 @@ const object = {
 // @return {Promise}
 //
 const extractLinkFromIpfsObject = (hash, linkName = 'data') => {
-  log.info(`${MODULE_NAME}: fetching data for object ${hash}`)
+  // log.info(`${MODULE_NAME}: fetching data for object ${hash}`)
 
   return object.get(hash)
     .then((ipfsObj) => {
       const links = ipfsObj.links
       if (R.isNil(links)) {
-        log.info(`${MODULE_NAME}: Object is missing a links property`)
+        // log.info(`${MODULE_NAME}: Object is missing a links property`)
         throw new NomadError('Object is missing links property')
       }
 
       const linkData = R.find(R.propEq('name', linkName), links)
       if (R.isNil(linkData)) {
-        log.info(`${MODULE_NAME}: Object is missing a ${linkName} link`)
+        // log.info(`${MODULE_NAME}: Object is missing a ${linkName} link`)
         throw new NomadError(`Object is missing a ${linkName} link`)
       }
 
