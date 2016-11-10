@@ -1,6 +1,6 @@
 {
   "name": "nomad-stream",
-  "version": "1.0.0",
+  "version": "0.0.4",
   "description": "A Dispersed Computing Network Composed of 'Software Sensor'",
   "main": "src/index.js",
   "scripts": {

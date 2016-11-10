@@ -5,23 +5,29 @@ const Subscription = require('./subscription')
 const { publish, publishRoot } = require('./publish')
 const { getHead } = require('./node-cache')
 const log = require('./utils/log')
-const config = require('./utils/config')
 const { id } = require('./utils/ipfs')
-const { passOrDie } = require('./utils/errors')
+const { passOrDie, NomadError } = require('./utils/errors')
 
 const MODULE_NAME = 'NODE'
 
 // Class: Node
 //
+// @param {Object} userConfig (Array of peerIds)
+//
 module.exports = class Node {
-  constructor() {
+  constructor(userConfig = []) {
     this.identity = null
+
+    // TODO: tidy this bit up
+    const hydratedUserConfig = R.map((sub) => {
+      return { sub: null }
+    }, userConfig)
 
     this.subscriptions = R.mapObjIndexed((sub, subId) => {
       const newSub = new Subscription(subId)
       // newSub.start()
       return newSub
-    }, config.subscriptions)
+    }, hydratedUserConfig)
 
     this.head = getHead()
   }
@@ -33,6 +39,7 @@ module.exports = class Node {
   prepareToPublish() {
     log.info(`${MODULE_NAME}: Connecting sensor to the network`)
 
+    // TODO: tidy this up into an connection-status checker fn
     return id()
       .then((identity) => {
         log.info(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)

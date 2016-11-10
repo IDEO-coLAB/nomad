@@ -19,10 +19,8 @@ describe('Black box test of publish then subscribe:', () => {
     ipfsControl.startIPFSDaemon()
     log.info(`waiting ${IPFSLaunchWaitSeconds} seconds for IPFS daemon to start and find peers`)
     setTimeout(() => {
-      node = new Node()
       peerId = getPeerId(ipfsControl.getConfig())
-      // Note: Override local subscriptions and force subscribe to self for testing
-      node.subscriptions = [peerId]
+      node = new Node() // subscribe to self
       done()
     }, IPFSLaunchWaitSeconds * 1000)
   })
