@@ -66,41 +66,52 @@ module.exports = class Node {
   // Add new subscription(s) to the node, attach an event handler
   // and start polling for each new subscription
   //
-  // @param {Array || String} subscriptionIds ([peerId, peerId, ...] or peerId)
+  // @param {Array || String} nodeIds ([peerId, peerId, ...] or peerId)
   // @param {Func} cb
   //
-  subscribe(subscriptionIds, cb) {
+  subscribe(nodeIds, cb) {
     if (typeof cb !== 'function') {
       throw new NomadError('Callback must be a function')
     }
 
-    let newSubscriptions = subscriptionIds
+    let newSubscriptions = nodeIds
     if (typeof newSubscriptions === 'string') {
       newSubscriptions = [newSubscriptions]
     }
     // TODO: More sanity checking (e.g. for b58 strings)
 
-    let nodeSubscriptions = Object.assign({}, this.subscriptions)
+    let subscriptions = Object.assign({}, this.subscriptions)
 
     R.forEach((subId) => {
-      if (!R.has(subId, nodeSubscriptions)) {
-        log.info(`${MODULE_NAME}: ${subId}: New subscription handler registered`)
+      if (!R.has(subId, subscriptions)) {
+        log.info(`${MODULE_NAME}: ${subId}: Subscribed`)
         const newSub = new Subscription(subId)
         newSub.addHandler(cb)
         newSub.start()
-        nodeSubscriptions[subId] = newSub
+        subscriptions[subId] = newSub
       }
     }, newSubscriptions)
 
-    // Set the new subscriptions on the node
-    this.subscriptions = nodeSubscriptions
+    // Update the node's subscriptions
+    this.subscriptions = subscriptions
   }
 
   // Remove a subscription from the node
   //
   // @param {String} subscriptionId (peerId)
   //
-  unsubscribe(subscriptionId) {
+  unsubscribe(nodeId) {
+    if (typeof nodeId !== 'string') {
+      throw new NomadError('nodeId must be a string')
+    }
 
+    let subscriptions = Object.assign({}, this.subscriptions)
+    if (R.has(nodeId, subscriptions)) {
+      delete subscriptions[nodeId]
+      log.info(`${MODULE_NAME}: ${nodeId}: Unsubscribed`)
+    }
+
+    // Update the node's subscriptions
+    this.subscriptions = subscriptions
   }
 }

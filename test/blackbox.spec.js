@@ -1,4 +1,5 @@
 const expect = require('chai').expect
+const R = require('ramda')
 
 const ipfsControl = require('./utils/ipfs-control')
 const Node = require('./../src/node')
@@ -52,11 +53,24 @@ describe('Black box test of publish then subscribe:', () => {
   })
 
   describe('subscribe: ', () => {
-    it('should receive the latest message pointed to by IPNS when theres no cached subscription head', (done) => {
+    it('should attach a handler and receive the latest message pointed to by IPNS when theres no cached subscription head', (done) => {
       node.subscribe([peerId], (message) => {
         expect(message).to.exist
+        expect(R.keys(node.subscriptions).length).to.eql(1)
         done()
       })
+    })
+  })
+
+  describe('unsubscribe: ', () => {
+    it('should handle invalid args', () => {
+      const thrower = () => node.unsubscribe({ something: 123 })
+      expect(thrower).to.throw
+    })
+
+    it('success', () => {
+      node.unsubscribe(peerId)
+      expect(R.keys(node.subscriptions).length).to.eql(0)
     })
   })
 
