@@ -18,20 +18,4 @@ describe('Subscription:', () => {
       expect(subscription).to.exist
     })
   })
-
-  describe('addHandler:', () => {
-    it('success', () => {
-      // returns a remove handler
-      removeHandlerA = subscription.addHandler(handlerA)
-      expect(subscription._handlers.length).to.eql(1)
-      expect(typeof removeHandlerA).to.eql('function')
-    })
-  })
-
-  describe('_removeHandler:', () => {
-    it('success', () => {
-      removeHandlerA()
-      expect(subscription._handlers.length).to.eql(0)
-    })
-  })
 })

@@ -51,15 +51,14 @@ describe('Black box test of publish then subscribe:', () => {
     })
   })
 
-  // describe('subscribe: ', () => {
-  //   it('should receive the latest message pointed to by IPNS when theres no cached subscription head', (done) => {
-  //     node.subscribe([peerId], (err, message) => {
-  //       expect(err).to.not.exist
-  //       expect(message.message).to.eql('second message')
-  //       done()
-  //     })
-  //   })
-  // })
+  describe('subscribe: ', () => {
+    it('should receive the latest message pointed to by IPNS when theres no cached subscription head', (done) => {
+      node.subscribe([peerId], (message) => {
+        expect(message.message).to.eql('second message')
+        done()
+      })
+    })
+  })
 
   // describe('messages: ', () => {
   //   it('should allow a user to get all received messages for a specific key', (done) => {

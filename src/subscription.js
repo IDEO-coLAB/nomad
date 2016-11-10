@@ -22,20 +22,13 @@ module.exports = class Subscription {
     // a backlog to handle message delivery if the local subscription head
     // gets out of sync from the network's subscription head
     this._backlog = []
-    // set the latest head from disk
-    this.link = subscriptionCache.get(subscriptionId) || null
+    // TODO: decide how to use the .head property on a subscription
+    // it is useful, but figure out the best way
   }
 
   addHandler(handler) {
-    if (typeof handler !== 'function') {
-      // do something
-    }
-    if (R.contains(handler, this._handlers)) {
-      // do something
-    }
     this._handlers.push(handler)
-    // return a handle to remove the listener
-    return this._removeHandler(handler)
+    return true
   }
 
   start() {
@@ -44,18 +37,18 @@ module.exports = class Subscription {
   }
 
   _poll() {
-    log.info(`${MODULE_NAME}: Starting poll for ${this.id}`)
+    log.info(`${MODULE_NAME}: ${this.id}: Starting poll`)
 
     ipfsUtils.id()  // TODO: better online check
       .then(() => this._getHead())
       .then((head) => this._syncHead(head))
       .then(() => {
-        log.info(`${MODULE_NAME}: ${POLL_MILLIS / 1000} seconds until next poll for ${this.id}`)
+        log.info(`${MODULE_NAME}: ${this.id}: ${POLL_MILLIS / 1000} seconds until next poll`)
         setTimeout(() => this._poll(), POLL_MILLIS)
       })
       .catch(passOrDie(MODULE_NAME))
       .catch((err) => {
-        log.err(`${MODULE_NAME}: Poll error for ${this.id}`, err)
+        log.err(`${MODULE_NAME}: ${this.id}: Poll error`, err)
         setTimeout(() => this._poll(), POLL_MILLIS)
       })
   }
@@ -67,7 +60,7 @@ module.exports = class Subscription {
   // @return {Promise} b58 hash
   //
   _getHead() {
-    log.info(`${MODULE_NAME}: Fetching remote head for ${this.id}`)
+    log.info(`${MODULE_NAME}: ${this.id}: Fetching remote head`)
 
     return ipfsUtils.name.resolve(this.id)
       .then(subscriptionObj => R.prop('Path', subscriptionObj))
@@ -76,7 +69,7 @@ module.exports = class Subscription {
         return Promise.resolve(head)
       })
       .catch((err) => {
-        log.err(`${MODULE_NAME}: _getHead error for ${this.id}`, err)
+        log.err(`${MODULE_NAME}: ${this.id}: _getHead error`, err)
         return Promise.reject(err)
       })
   }
@@ -88,28 +81,30 @@ module.exports = class Subscription {
   // @return {Promise} b58 hash
   //
   _syncHead(head) {
-    log.info(`${MODULE_NAME}: Syncing local index and remote head for ${this.id}`)
+    log.info(`${MODULE_NAME}: ${this.id}: Syncing cached head with remote head`)
 
-    const localIndex = subscriptionCache.get(this.id)
+    // TODO: this is currently SLOW (it is a file read)
+    // It is a stopgap until we decide how to handle caching
+    const cachedHead = subscriptionCache.get(this.id)
 
-    // if there is no locally stored subscription head, write it to disk and continue
-    if (R.isNil(localIndex)) {
-      log.info(`${MODULE_NAME}: No local index found, adding new local index (${head}) for ${this.id}`)
+    // if there is no cached subscription head, cache it and
+    // deliver the message from the current head
+    if (R.isNil(cachedHead)) {
+      log.info(`${MODULE_NAME}: ${this.id}: No cached head found`)
       return this._deliverMessage(head)
     }
 
-    // if the locally stored subscription head is in sync with the
-    // network's latest version of the head, continue
-    if (localIndex === head) {
-      log.info(`${MODULE_NAME}: Local index (${localIndex}) matches remote head (${head}) for ${this.id}`)
+    // if the cached subscription head matches the remote head,
+    // deliver the message from the current head
+    if (cachedHead === head) {
+      log.info(`${MODULE_NAME}: ${this.id}: cached head ${cachedHead} matches remote head ${head}`)
       return this._deliverMessage(head)
     }
 
-    // if the locally stored subscription head is NOT in sync with the
-    // network's latest version of the head, then walk back to fund the
-    // head that matches our local index, then start delivering the message
-    // backlog in order
-    log.info(`${MODULE_NAME}: Local index (${localIndex}) does not match remote head (${head}) for ${this.id}`)
+    // if the cached subscription head does NOT match the remote head,
+    // walk back to find the head that matches the cached head,
+    // then deliver the message backlog in order
+    log.info(`${MODULE_NAME}: ${this.id}: cached head ${cachedHead} does not match remote head ${head}`)
     return this._walkBack(head)
   }
 
@@ -128,87 +123,79 @@ module.exports = class Subscription {
         return ipfsUtils.object.cat(link)
       })
       .then((message) => {
-        const index = subscriptionCache.get(this.id)
+        const cachedHead = subscriptionCache.get(this.id)
 
-        if (head === index) {
-          log.info(`${MODULE_NAME}: Remote head was unchanged for ${this.id}`)
+        if (head === cachedHead) {
+          log.info(`${MODULE_NAME}: ${this.id}: Remote head unchanged`)
           return true
         }
-        log.info(`${MODULE_NAME}: Delivering new message (${head}) for ${this.id}`)
+        log.info(`${MODULE_NAME}: ${this.id}: Delivering new message ${head}`)
 
         const result = { id: this.id, link: messageLink, message }
+
         try {
-          log.info(`${MODULE_NAME}: Calling handlers for ${this.id}`)
+          log.info(`${MODULE_NAME}: ${this.id}: Calling handler`)
+
 
           // Call the user-supplied callbacks for the new message
           R.forEach(handler => handler(result), this._handlers)
-          // Add the subscription head link as the local index
-          this.link = subscriptionCache.put(this.id, head)
+          // Add the subscription head link as the cached head
+          subscriptionCache.set(this.id, head)
+
           // Add the new message to the store
           messageCache.put(this.id, message, messageLink)
 
-          log.info(`${MODULE_NAME}: Handlers successfully called for ${this.id}`)
+
+
+          log.info(`${MODULE_NAME}: ${this.id}: Handler successfully called`)
         } catch (err) {
-          log.err(`${MODULE_NAME}: Error when calling handlers for ${this.id}`, err)
+          log.err(`${MODULE_NAME}: ${this.id}: Error calling handler`, err)
         }
 
         return true
       })
       .catch((err) => {
-        log.err(`${MODULE_NAME}: _deliverMessage error for ${this.id}`, err)
+        log.err(`${MODULE_NAME}: ${this.id}: _deliverMessage error`, err)
         return Promise.reject(err)
       })
   }
 
-  _walkBack(link, localIdx) {
-    log.info(`${MODULE_NAME}: Walking back for ${this.id}`)
+  _walkBack(link, cached) {
+    log.info(`${MODULE_NAME}: ${this.id}: Walking back`)
 
-    const localIndex = localIdx || subscriptionCache.get(this.id)
+    const cachedHead = cached || subscriptionCache.get(this.id)
 
     this._backlog.unshift(link)
 
     return ipfsUtils.extractLinkFromIpfsObject(link, 'prev')
       .then((prevLink) => {
-        if (localIndex !== prevLink) {
-          log.info(`${MODULE_NAME}: Local index and remote head do not match for ${this.id}`)
-          return this._walkBack(prevLink, localIndex)
+        if (cachedHead !== prevLink) {
+          log.info(`${MODULE_NAME}: ${this.id}: Cached head and remote head do not match`)
+          return this._walkBack(prevLink, cachedHead)
         }
-        log.info(`${MODULE_NAME}: Found the remote pointer to the local index (${prevLink}) for ${this.id}`)
+        log.info(`${MODULE_NAME}: ${this.id}: Found remote ${prevLink} that points to cached head`)
         return this._deliverBacklog()
       })
       .catch((err) => {
-        log.err(`${MODULE_NAME}: _walkBack error for ${this.id}`, err)
+        log.err(`${MODULE_NAME}: ${this.id}: _walkBack error`, err)
         return Promise.reject(err)
       })
   }
 
   _deliverBacklog() {
     if (!this._backlog.length) {
-      log.info(`${MODULE_NAME}: Finished delivering the backlog for ${this.id}`)
+      log.info(`${MODULE_NAME}: ${this.id}: Finished delivering the backlog`)
       return Promise.resolve(true)
     }
 
     const linkToDeliver = R.head(this._backlog.splice(0, 1))
-    log.info(`${MODULE_NAME}: Delivering the backlog link ${linkToDeliver} for ${this.id}`)
+    log.info(`${MODULE_NAME}: ${this.id}: Delivering the backlog link ${linkToDeliver}`)
 
     return this._deliverMessage(linkToDeliver)
       .then(() => this._deliverBacklog())
       .catch((err) => {
-        log.err(`${MODULE_NAME}: _deliverBacklog error for ${this.id}`, err)
+        log.err(`${MODULE_NAME}: ${this.id}: _deliverBacklog error`, err)
         return Promise.reject(err)
       })
-  }
-
-  _removeHandler(handler) {
-    return () => {
-      const idxToRemove = R.indexOf(handler, this._handlers)
-      /* prefer-const: 0 */
-      // Lint note: Do not set newHandlers as a const because we need to splice it
-      // TODO: make a copy and set the node backlog as the new object
-      let newHandlers = this._handlers.slice(0)
-      newHandlers.splice(idxToRemove, 1)
-      this._handlers = newHandlers
-      return true
-    }
   }
 }

@@ -24,7 +24,6 @@ const initLatestNodeHead = (data) => {
       const linkName = 'data'
 
       log.info(`${MODULE_NAME}: Adding data link to new sensor head`)
-
       return ipfsUtils.object.link(dataDAG.node, emptyDAG, linkName)
     })
 }
@@ -51,7 +50,7 @@ const linkLatestNodeHeadToPrev = (sourceDAG, targetDAG) => {
 // @return {Promise} nomad node object
 //
 const publishLatestNodeHead = (dag, node) => {
-  log.info(`${MODULE_NAME}: Publishing new sensor head: ${dag.toJSON().Hash} with links`, dag.toJSON().Links)
+  log.info(`${MODULE_NAME}: Publishing new sensor head (${dag.toJSON().Hash}) with links`, dag.toJSON().Links)
   let newHead
 
   return ipfsUtils.object.put(dag)

@@ -11,6 +11,6 @@ const cachedSubscriptionHeadsPath = path.resolve(__dirname, './../../cache/subsc
 module.exports = {
   path: {
     cachedNodeHead: cachedNodeHeadPath,
-    subscriptionHeads: cachedSubscriptionHeadsPath
+    cachedSubscriptionHeads: cachedSubscriptionHeadsPath
   },
 }

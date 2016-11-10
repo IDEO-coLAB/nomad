@@ -15,20 +15,9 @@ const MODULE_NAME = 'NODE'
 // @param {Object} userConfig (Array of peerIds)
 //
 module.exports = class Node {
-  constructor(userConfig = []) {
+  constructor(userConfig = {}) {
     this.identity = null
-
-    // TODO: tidy this bit up
-    const hydratedUserConfig = R.map((sub) => {
-      return { sub: null }
-    }, userConfig)
-
-    this.subscriptions = R.mapObjIndexed((sub, subId) => {
-      const newSub = new Subscription(subId)
-      // newSub.start()
-      return newSub
-    }, hydratedUserConfig)
-
+    this.subscriptions = null
     this.head = getHead()
   }
 
@@ -40,10 +29,11 @@ module.exports = class Node {
     log.info(`${MODULE_NAME}: Connecting sensor to the network`)
 
     // TODO: tidy this up into an connection-status checker fn
+    // since it gives the node an identity, I think it is ok to wrap it in
     return id()
       .then((identity) => {
-        log.info(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)
         this.identity = identity
+        log.info(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)
         return this
       })
       .catch(passOrDie(MODULE_NAME))
@@ -73,16 +63,33 @@ module.exports = class Node {
       .catch(passOrDie(MODULE_NAME))
   }
 
-  // Add a user-defined function to handle new message arrivals for subscriptions
+  // Add a handler function to each subscription subscriptions and start
+  // each subscription poll
   //
+  // @param {Array} subscriptions ([peerId, peerId, ...])
   // @param {Func} cb
   //
-  onMessage(cb) {
-    log.info(`${MODULE_NAME}: Registering handlers for ${R.length(R.keys(this.subscriptions))} subscriptions`)
+  subscribe(subscriptions, cb) {
+    if (typeof cb !== 'function') {
+      throw new NomadError('callback must be a function')
+    }
 
-    // possibly return list of remove functions
-    R.values((sub) => {
-      sub.addHandler(cb)
-    }, this.subscriptions)
+    let subs = subscriptions
+    if (typeof subs === 'string') {
+      subs = [subs]
+    }
+    // TODO: More sanity checking (e.g. for b58 strings)
+
+    // TODO: Handle user-passed subscriptions in the constructor!
+    this.subscriptions = {}
+
+    R.forEach((subId) => {
+      const newSub = new Subscription(subId)
+      newSub.addHandler(cb)
+      newSub.start()
+      this.subscriptions[subId] = newSub
+    }, subscriptions)
+
+    log.info(`${MODULE_NAME}: Handler registered for ${R.length(subscriptions)} subscriptions`)
   }
 }

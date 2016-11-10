@@ -2,12 +2,13 @@ const fs = require('fs')
 
 const config = require('./utils/config')
 const log = require('./utils/log')
+const { NomadError } = require('./utils/errors')
 
 const MODULE_NAME = 'SUBSCRIPTION_CACHE'
 
-const SUB_HEADS_PATH = config.path.subscriptionHeads
+const SUB_HEADS_PATH = config.path.cachedSubscriptionHeads
 
-const initSubscriptionRepo = () => {
+const initSubscriptionCache = () => {
   fs.writeFileSync(SUB_HEADS_PATH, `${JSON.stringify({})}\r\n`)
   return fs.readFileSync(SUB_HEADS_PATH)
 }
@@ -16,26 +17,29 @@ const initSubscriptionRepo = () => {
 //
 // @param {String} id
 //
-// @return {String} || null
+// @return {String || null}
 //
 const get = (id) => {
   let buffer
+  let links
+  let subLink
 
+  // If the file doesn't exist, create it
   try {
     buffer = fs.readFileSync(SUB_HEADS_PATH)
-
-    if (buffer.length === 0) {
-      buffer = initSubscriptionRepo()
-    }
   } catch (err) {
-    // If the file doesn't exist, create it
-    if (err.code === 'ENOENT') {
-      buffer = initSubscriptionRepo()
-    }
+    buffer = initSubscriptionCache()
   }
 
-  const links = JSON.parse(buffer.toString())
-  return links[id] || null
+  // ensure valid json
+  try {
+    links = JSON.parse(buffer.toString())
+    subLink = links[id]
+  } catch (err) {
+    subLink = null
+  }
+
+  return subLink
 }
 
 // Add a link to the subscription link cache
@@ -43,8 +47,8 @@ const get = (id) => {
 // @param {String} id
 // @param {String} link
 //
-const put = (id, link) => {
-  log.info(`${MODULE_NAME}: Adding link (${link}) for ${id}`)
+const set = (id, link) => {
+  log.info(`${MODULE_NAME}: ${id}: Set link ${link}`)
 
   // TODO: handle if the file is missing somehow
   const buffer = fs.readFileSync(SUB_HEADS_PATH)
@@ -58,5 +62,5 @@ const put = (id, link) => {
 
 module.exports = {
   get,
-  put,
+  set,
 }

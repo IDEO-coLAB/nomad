@@ -167,14 +167,14 @@ const extractLinkFromIpfsObject = (hash, linkName = 'data') => {
     .then((ipfsObj) => {
       const links = ipfsObj.links
       if (R.isNil(links)) {
-        log.info(`${MODULE_NAME}: head object is missing a links property`)
-        throw new NomadError('head object is missing links property')
+        log.info(`${MODULE_NAME}: Object is missing a links property`)
+        throw new NomadError('Object is missing links property')
       }
 
       const linkData = R.find(R.propEq('name', linkName), links)
       if (R.isNil(linkData)) {
-        log.info(`${MODULE_NAME}: head object is missing a ${linkName} link`)
-        throw new NomadError(`head object is missing a ${linkName} link`)
+        log.info(`${MODULE_NAME}: Object is missing a ${linkName} link`)
+        throw new NomadError(`Object is missing a ${linkName} link`)
       }
 
       const encoded = base58FromBuffer(linkData.hash)
