@@ -168,18 +168,36 @@ module.exports = class Subscription {
 
     this._backlog.unshift(link)
 
+    // TODO: extractLink should not throw so we know it is a root,
+    // it should return something that we can work with
     return ipfsUtils.extractLinkFromIpfsObject(link, 'prev')
+      // If we have a 'prev' link
+      // we are not at the subscription's root
       .then((prevLink) => {
+        // If the 'prev' link does not match the cached head, continue walking back
         if (cachedHead !== prevLink) {
           log.info(`${MODULE_NAME}: ${this.id}: Cached head and remote head do not match`)
           return this._walkBack(prevLink, cachedHead)
         }
+
+        // If the 'prev' link matches the cached head, it means that we've arrived at
+        // the next message that we need to deliver. Start delivering the backlog!
         log.info(`${MODULE_NAME}: ${this.id}: Found remote ${prevLink} that points to cached head`)
         return this._deliverBacklog()
       })
+      // If there is an error, the object did not have a 'prev' link.
+      // We can assume that the current object is the subscription's root
+      // and that we should now deliver messages, starting with the new root,
+      // and reset the subscription's cached head to this new root.
+      //
+      // Nutshell: A break in the publication chain happened; we now have a new root
       .catch((err) => {
-        log.err(`${MODULE_NAME}: ${this.id}: _walkBack error`, err)
-        return Promise.reject(err)
+        if (cachedHead) {
+          log.info(`${MODULE_NAME}: ${this.id}: Discovered new root, starting delivery`)
+        } else {
+          log.info(`${MODULE_NAME}: ${this.id}: Arrived at root, starting delivery`)
+        }
+        return this._deliverBacklog()
       })
   }
 

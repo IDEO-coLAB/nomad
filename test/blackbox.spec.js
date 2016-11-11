@@ -7,7 +7,7 @@ const log = require('./../src/utils/log')
 
 let node = null
 let peerId = null
-const IPFSLaunchWaitSeconds = 60
+const IPFSLaunchWaitSeconds = 50
 
 function getPeerId(configObj) {
   return configObj.Identity.PeerID
@@ -47,9 +47,9 @@ describe('Black box test of publish then subscribe:', () => {
       node.publishRoot('root message').then(() => { done() })
     })
 
-    // it('should succeed when publishing a message after publishing a root message', (done) => {
-    //   node.publish('second message').then(() => { done() })
-    // })
+    it('should succeed when publishing a message after publishing a root message', (done) => {
+      node.publish('second message').then(() => { done() })
+    })
   })
 
   describe('subscribe: ', () => {
@@ -73,13 +73,4 @@ describe('Black box test of publish then subscribe:', () => {
       expect(R.keys(node.subscriptions).length).to.eql(0)
     })
   })
-
-  // describe('messages: ', () => {
-  //   it('should allow a user to get all received messages for a specific key', (done) => {
-  //     const messages = node.messages.get(peerId)
-  //     expect(messages).to.have.length(1)
-  //     expect(messages[0]).to.equal('This is the message you\'re looking for')
-  //     done()
-  //   })
-  // })
 })
