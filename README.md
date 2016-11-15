@@ -70,8 +70,8 @@ ipfs daemon
 
 Still having trouble? Turn on verbose logging and restart Node.js
 ```console
-export DEBUG="nomad*"
-node subscribe.js
+> export DEBUG="nomad*"
+> node subscribe.js
 ```
 
 ### Full API
