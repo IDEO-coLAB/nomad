@@ -34,7 +34,7 @@ Install the Nomad npm module:
 npm install --save nomad-stream
 ```
 
-### Write code to subscribe to a stream
+### Write some code to subscribe to a stream
 Subscribe to an existing nomad stream and log its messages to the console:
 ```javascript
 const Nomad = require('nomad-stream')
