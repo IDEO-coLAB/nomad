@@ -28,7 +28,8 @@ USAGE
 ```
 
 Install the Nomad npm module:
-> If you don't have [Node.js](https://nodejs.org/en/download/), install it first.
+> (If you don't have [Node.js](https://nodejs.org/en/download/), install it first.)
+
 ```console
 npm install --save nomad-stream
 ```
