@@ -68,7 +68,7 @@ Not seeing any messages? Make sure you started IPFS:
 ipfs daemon
 ```
 
-Still having trouble? Turn on verbose logging and restart Node.js
+Still having trouble? Kill Node.js, turn on verbose logging, and try again:
 ```console
 > export DEBUG="nomad*"
 > node subscribe.js
