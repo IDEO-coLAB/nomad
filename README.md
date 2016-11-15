@@ -77,6 +77,10 @@ node subscribe.js
 
 #### Subscribing
 #### Publishing
+#### Node identity
+
+## Caveats
+Nomad is alpha software and depends on IPFS which is also alpha software. Things may break at any time. Nomad does not currently include features that support node fault tolerance, but they're in the works!
 
 ## Contribute
 
