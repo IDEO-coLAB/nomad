@@ -44,6 +44,7 @@ nomad.subscribe(['QmQRft1pewqjDGbUYQBZwmQ2GNX99djVGTKfPf8XJWKB2P'], function(mes
   console.log(message.message)
 })
 ```
+The string ```QmQRft1pewqjDGbUYQBZwmQ2GNX99djVGTKfPf8XJWKB2P``` is the unique id of the Nomad node to which this node is subscribing. The id is the hash of the public key of the node.
 
 Save your code as ```subscribe.js```
 
