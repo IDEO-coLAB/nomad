@@ -5,6 +5,9 @@
 ## Overview 
 Nomad is a decentralized system for subscribing to, processing, and publishing data in the form of ordered message streams. Nomad is decentralized: there are no message brokers through which messages pass. Nomad uses [IPFS](http://ipfs.io) to create a peer-to-peer network of nodes that routes messages from publisher to subscriber. Streams are published by nodes which are identified by a public key hash, making Nomad a permissionless system. Anyone can create a new node, subscribe to existing streams, and publish a stream without signing up for any proprietary service.
 
+## Why Nomad?
+Data is a beautiful thing, but it's too hard to share live data, to process data and share real time insights, or to connect visualizations to live data. Nomad draws from the likes of stream processing systems like Apache [Kafka](https://kafka.apache.org/) but adds a healthy dose of decentralization to create a global system of durable but lightweight data pipes that anyone can build on top of. 
+
 ## Get Started  
 
 ### Install
