@@ -11,7 +11,7 @@ Data is a beautiful thing, but it's too hard to share live data, to process data
 ## Get Started  
 
 ### Install
-Head to the IPFS distributions page [here](https://dist.ipfs.io/#go-ipfs) and download the binary for your platform. 
+Nomad uses IPFS under the hood. Head to the IPFS distributions page [here](https://dist.ipfs.io/#go-ipfs) and download the binary for your platform. 
 
 After downloading, untar the archive and run the included ```install.sh```:
 ```console
