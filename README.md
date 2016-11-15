@@ -27,9 +27,8 @@ USAGE
   ipfs - Global p2p merkle-dag filesystem.
 ```
 
-> If you don't have [Node.js](https://nodejs.org/en/download/), install it first.
-
 Install the Nomad npm module:
+> If you don't have [Node.js](https://nodejs.org/en/download/), install it first.
 ```console
 npm install --save nomad-stream
 ```
