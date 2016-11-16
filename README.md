@@ -118,7 +118,7 @@ instance.publish(messageString)
 Publishes a message to subscribers. As with ```publishRoot``` the message must be a string. Returns a promise.
 
 ### Node identity
-A running node's id comes from the running instance of ipfs started via ```ipfs daemon```. A new identity can be created by either deleting an existing IPFS repo or setting ```IPFS_PATH``` and running ```ipfs init``` again. For details see the IPFS [https://ipfs.io/docs/commands/](command line docs). 
+A running node's id comes from the running instance of ipfs started via ```ipfs daemon```. A new identity can be created by either deleting an existing IPFS repo or setting ```IPFS_PATH``` and running ```ipfs init``` again. For details see the IPFS [command line docs](https://ipfs.io/docs/commands/). 
 
 ## Caveats
 Nomad is alpha software and depends on IPFS which is also alpha software. Things may break at any time. Nomad does not currently include features that support node fault tolerance, but they're in the works!
