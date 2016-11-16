@@ -74,16 +74,16 @@ Still having trouble? Kill Node.js, turn on verbose logging, and try again:
 > node subscribe.js
 ```
 
-### Full API
+## Full API
 
-#### Initializing
+### Initializing
 Require module and create a new instance:
 ```javascript
 const Nomad = require('nomad-stream')
 const nomad = new Nomad()
 ```
 
-#### Subscribing
+### Subscribing
 Subscribe to one or more nodes' streams:
 ```javascript
 nomad.subscribe(array, callback)
@@ -96,7 +96,7 @@ nomad.subscribe(array, callback)
 
 ```id``` is the node id of the node that published the message, ```link``` is the hash of the IPFS IPLD object that contains the message data, ```message``` is the message string. 
 
-#### Publishing
+### Publishing
 Prepare a node to publish:
 ```javascript
 nomad.prepareToPublish().then(function(n) {
@@ -117,7 +117,7 @@ instance.publish(messageString)
 ```
 Publishes a message to subscribers. As with ```publishRoot``` the message must be a string. Returns a promise.
 
-#### Node identity
+### Node identity
 A running node's id comes from the running instance of ipfs started via ```ipfs daemon```. A new identity can be created by either deleting an existing IPFS repo or setting ```IPFS_PATH``` and running ```ipfs init``` again. For details see the IPFS [https://ipfs.io/docs/commands/](command line docs). 
 
 ## Caveats
