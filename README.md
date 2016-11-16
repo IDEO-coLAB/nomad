@@ -40,11 +40,11 @@ Subscribe to an existing nomad stream and log its messages to the console:
 const Nomad = require('nomad-stream')
 const nomad = new Nomad()
 
-nomad.subscribe(['QmQRft1pewqjDGbUYQBZwmQ2GNX99djVGTKfPf8XJWKB2P'], function(message) {
+nomad.subscribe(['QmSwyXCytv2uM47xT2BJiMaTAWhUYBtu5nLHemmCBWh8fu'], function(message) {
   console.log(message.message)
 })
 ```
-The string ```QmQRft1pewqjDGbUYQBZwmQ2GNX99djVGTKfPf8XJWKB2P``` is the unique id of the Nomad node to which this node is subscribing. The id is the hash of the public key of the node.
+The string ```QmSwyXCytv2uM47xT2BJiMaTAWhUYBtu5nLHemmCBWh8fu``` is the unique id of the Nomad node to which this node is subscribing. The id is the hash of the public key of the node.
 
 Save your code as ```subscribe.js```
 
@@ -76,9 +76,49 @@ Still having trouble? Kill Node.js, turn on verbose logging, and try again:
 
 ### Full API
 
+#### Initializing
+Require module and create a new instance:
+```javascript
+const Nomad = require('nomad-stream')
+const nomad = new Nomad()
+```
+
 #### Subscribing
+Subscribe to one or more nodes' streams:
+```javascript
+nomad.subscribe(array, callback)
+```
+
+```array``` is an array of node ids to subscribe to. ```callback``` is called once when a new message arrives for any subscribed stream. Callback is passed a single argument which is an object:
+```javascript
+{id, link, message}
+```
+
+```id``` is the node id of the node that published the message, ```link``` is the hash of the IPFS IPLD object that contains the message data, ```message``` is the message string. 
+
 #### Publishing
+Prepare a node to publish:
+```javascript
+nomad.prepareToPublish().then(function(n) {
+  const nomadInstance = n
+})
+```
+Returns a promise that resolves to an instance object used to publish messages.
+
+Publish a root message:
+```javascript
+instance.publishRoot(messageString)
+```
+Publishes a root message to subscribers, which is the first message in the stream of messages. The first time a node is run, publish root must be called once before ```publish``` is called. Published messages must be a string. To published structured data, data needs to be stringified first using ```JSON.stringify```. Returns a promise. 
+
+Publish a message to subscribers:
+```javascript
+instance.publish(messageString)
+```
+Publishes a message to subscribers. As with ```publishRoot``` the message must be a string. Returns a promise.
+
 #### Node identity
+A running node's id comes from the running instance of ipfs started via ```ipfs daemon```. A new identity can be created by either deleting an existing IPFS repo or setting ```IPFS_PATH``` and running ```ipfs init``` again. For details see the IPFS [https://ipfs.io/docs/commands/](command line docs). 
 
 ## Caveats
 Nomad is alpha software and depends on IPFS which is also alpha software. Things may break at any time. Nomad does not currently include features that support node fault tolerance, but they're in the works!
