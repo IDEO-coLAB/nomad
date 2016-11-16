@@ -62,7 +62,7 @@ In a new terminal window, start subscribing:
 > It may take a minute or more before you see any messages.
 
 ### 🔥🚀
-You just created your first node. What's next? Browse the docs for the complete API. Create a node that publishes something interesting to the world.
+You just created your first node! What's next? Browse the docs for the complete API. Create a node that publishes something interesting to the world.
 
 ### Troubleshooting
 
