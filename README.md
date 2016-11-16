@@ -40,11 +40,11 @@ Subscribe to an existing nomad stream and log its messages to the console:
 const Nomad = require('nomad-stream')
 const nomad = new Nomad()
 
-nomad.subscribe(['QmSwyXCytv2uM47xT2BJiMaTAWhUYBtu5nLHemmCBWh8fu'], function(message) {
+nomad.subscribe(['QmP2aknMA7RwL7KXyQMvVyiptbhDEgxqe7LiBTffLbtTSR'], function(message) {
   console.log(message.message)
 })
 ```
-The string ```QmSwyXCytv2uM47xT2BJiMaTAWhUYBtu5nLHemmCBWh8fu``` is the unique id of the Nomad node to which this node is subscribing. The id is the hash of the public key of the node.
+The string ```QmP2aknMA7RwL7KXyQMvVyiptbhDEgxqe7LiBTffLbtTSR``` is the unique id of the Nomad node to which this node is subscribing. The id is the hash of the public key of the node. ```QmP2ak...``` is a node that publishes a friendly message every minute.
 
 Save your code as ```subscribe.js```
 
