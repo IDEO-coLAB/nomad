@@ -125,9 +125,7 @@ Nomad is alpha software and depends on IPFS which is also alpha software. Things
 
 ## Contribute
 
-Feel free to dive in! [Open an issue](https://github.com/RichardLitt/standard-readme/issues/new) or submit PRs.
-
-Standard Readme follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
+Feel free to dive in! [Open an issue](https://github.com/ideo-colab/nomad/issues/new) or submit PRs.
 
 ## License
 
