@@ -99,15 +99,7 @@ nomad.subscribe(array, callback)
 
 ```id``` is the node id of the node that published the message, ```link``` is the hash of the IPFS IPLD object that contains the message data, ```message``` is the message string. 
 
-### Subscribing during Runtime
-To subscribe to one or more nodes' streams during runtime:
-```javascript
-nomad.subscribe(array, callback)
-```
-The corresponding subscribe function will be called when a node you are subscribed to has published new data to its stream. 
-
-### Unsubscribing during Runtime
-Unsubscribing to one node's stream during runtime:
+Unsubscribe to a node's stream:
 ```javascript
 nomad.unsubscribe(nodeID)
 ```
