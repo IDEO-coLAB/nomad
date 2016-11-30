@@ -43,12 +43,16 @@ describe('Black box test of publish then subscribe:', () => {
       node.prepareToPublish().then(() => { done() })
     })
 
-    it('should succeed when publishing a root message', (done) => {
+    it('should succeed when publishing a string root message', (done) => {
       node.publishRoot('root message').then(() => { done() })
     })
 
-    it('should succeed when publishing a message after publishing a root message', (done) => {
+    it('should succeed when publishing a string message after publishing a root message', (done) => {
       node.publish('second message').then(() => { done() })
+    })
+
+    it('should succeed when publishing a javascript object message', (done) => {
+      node.publish({message: 'message as object'}).then(() => { done() })
     })
   })
 
