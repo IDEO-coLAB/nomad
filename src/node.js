@@ -41,25 +41,33 @@ module.exports = class Node {
 
   // Publish data to the network
   //
-  // @param {Object} data
+  // @param {Object} data which should be JSON.stringify-able
   //
   // @return {Promise} Node
   //
   publish(data) {
+    let dataString = data
+    if (typeof data !== 'string') {
+      dataString = JSON.stringify(data)
+    }
     log.info(`${MODULE_NAME}: Publishing new data`)
-    return publish(data, this)
+    return publish(dataString, this)
       .catch(passOrDie(MODULE_NAME))
   }
 
   // Publish the node's data root to the network
   //
-  // @param {Object} data
+  // @param {Object} data which should be JSON.stringify-able
   //
   // @return {Promise} Node
   //
   publishRoot(data) {
+    let dataString = data
+    if (typeof data !== 'string') {
+      dataString = JSON.stringify(data)
+    }
     log.info(`${MODULE_NAME}: Publishing new root`)
-    return publishRoot(data, this)
+    return publishRoot(dataString, this)
       .catch(passOrDie(MODULE_NAME))
   }
 
