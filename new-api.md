@@ -65,7 +65,7 @@ nomad.subscribe(array, callback)
 {id, link, message}
 ```
 
-```id``` is the node id of the node that published the message, ```link``` is the hash of the IPFS IPLD object that contains the message data, ```message``` is the message string. 
+```id``` is the node id of the node that published the message, ```link``` is the hash of the IPFS IPLD object that contains the message data, ```message``` is the message string. Note that currently, even if a node publishes a JavaScript object, ```message.message``` will still be the stringified JSON of the object.
 
 Unsubscribe to a node's stream:
 ```javascript
