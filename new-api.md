@@ -107,7 +107,9 @@ nomad.publish(messageString)
 ```
 Publishes a message to subscribers. The message can be a string or an object that is serializable to JSON.
 
-> suggest we remove publishroot from the api. Calls to publish should check the message cache and if it is in fact a root message, it should automatically create an IPLD object without a ```prev``` link. If a user wants to end a previous stream and start a new stream of messsages (so that following ```prev``` links backwards ends at the root of the new stream) this should be done by manipulating the cache directly either using an api we'd write or command line tools. 
+### Publish root -- remove
+
+suggest we remove publishroot from the api. Calls to publish should check the message cache and if it is in fact a root message, it should automatically create an IPLD object without a ```prev``` link. If a user wants to end a previous stream and start a new stream of messsages (so that following ```prev``` links backwards ends at the root of the new stream) this should be done by manipulating the cache directly either using an api we'd write or command line tools. 
 
 For example ```nomad.clearCache()``` would be the same as publishing a new root, effectively getting rid of previous messages.
 
