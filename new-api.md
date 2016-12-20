@@ -11,22 +11,6 @@ Data is a beautiful thing, but it's too hard to share live data, to process data
 ## Get Started  
 
 ### Install
-Nomad uses IPFS under the hood. Head to the IPFS distributions page [here](https://dist.ipfs.io/#go-ipfs) and download the binary for your platform. 
-
-After downloading, untar the archive and run the included ```install.sh```:
-```console
-> tar xvfz go-ipfs.tar.gz
-> cd go-ipfs
-> ./install.sh
-```
-
-Test that IPFS installed successfully:
-```console
-> ipfs help
-USAGE
-  ipfs - Global p2p merkle-dag filesystem.
-```
-
 Install the Nomad npm module:
 > (If you don't have [Node.js](https://nodejs.org/en/download/), install it first.)
 
@@ -39,6 +23,9 @@ Subscribe to an existing nomad stream and log its messages to the console:
 ```javascript
 const Nomad = require('nomad-stream')
 const nomad = new Nomad()
+// Nomad constructor creates a new identity for the node so that use cases
+// where nomad is used only to subscribe, users don't have to think about creating
+// and identity. This would also be likely browser use case.
 
 nomad.subscribe(['QmP2aknMA7RwL7KXyQMvVyiptbhDEgxqe7LiBTffLbtTSR'], function(message) {
   console.log(message.message)
@@ -49,12 +36,6 @@ The string ```QmP2aknMA7RwL7KXyQMvVyiptbhDEgxqe7LiBTffLbtTSR``` is the unique id
 Save your code as ```subscribe.js```
 
 ### Start subscribing
-Start IPFS:
-```console
-> ipfs daemon
-```
-
-In a new terminal window, start subscribing:
 ```console
 > node subscribe.js
 ```
@@ -63,19 +44,6 @@ In a new terminal window, start subscribing:
 
 ### 🔥🚀
 You just created your first node! What's next? Browse the docs for the complete API. Create a node that publishes something interesting to the world.
-
-### Troubleshooting
-
-Not seeing any messages? Make sure you started IPFS:
-```console
-ipfs daemon
-```
-
-Still having trouble? Kill Node.js, turn on verbose logging, and try again:
-```console
-> export DEBUG="nomad*"
-> node subscribe.js
-```
 
 ## Full API
 
@@ -105,28 +73,35 @@ nomad.unsubscribe(nodeID)
 ```
 
 ### Publishing
-Prepare a node to publish:
+Nomad uses public keys to identify a node, so before publishing a new identity needs to be created: 
 ```javascript
-nomad.prepareToPublish().then(function(n) {
-  const nomadInstance = n
-})
+const identity = nomad.createIdentity()
+nomad.setIdentity(identity)
 ```
-Returns a promise that resolves to an instance object used to publish messages.
 
-Publish a root message:
+An identity can be saved and loaded from disk, so that a node can keep its identity accross runs:
 ```javascript
-instance.publishRoot(messageString)
+nomad.saveIdentityToFile(identity, '/path/to/file.json')
 ```
-Publishes a root message to subscribers, which is the first message in the stream of messages. The first time a node is run, publish root must be called once before ```publish``` is called. Published messages must be a string. To published structured data, data needs to be stringified first using ```JSON.stringify```. Returns a promise. 
+
+```javascript
+const identity = nomad.loadIdentityFromFile('/path/to/file.json')
+nomad.setIdentity(identity)
+```
+
+A Nomad identity includes a private key, so it should be secured with the same care as a password or api token. 
 
 Publish a message to subscribers:
 ```javascript
-instance.publish(messageString)
+nomad.publish(messageString)
 ```
-Publishes a message to subscribers. As with ```publishRoot``` the message must be a string. Returns a promise.
+Publishes a message to subscribers. The message can be a string or an object that is serializable to JSON.
 
-### Node identity
-A running node's id comes from the running instance of ipfs started via ```ipfs daemon```. A new identity can be created by either deleting an existing IPFS repo or setting ```IPFS_PATH``` and running ```ipfs init``` again. For details see the IPFS [command line docs](https://ipfs.io/docs/commands/). 
+> suggest we remove publishroot from the api. Calls to publish should check the message cache and if it is in fact a root message, it should automatically create an IPLD object without a ```prev``` link. If a user wants to end a previous stream and start a new stream of messsages (so that following ```prev``` links backwards ends at the root of the new stream) this should be done by manipulating the cache directly either using an api we'd write or command line tools. 
+
+For example ```nomad.clearCache()``` would be the same as publishing a new root, effectively getting rid of previous messages.
+
+At some point we're going to want cache management api or command line tools to do stuff like control how many historical messages in a stream to cache.
 
 ## Caveats
 Nomad is alpha software and depends on IPFS which is also alpha software. Things may break at any time. Nomad does not currently include features that support node fault tolerance, but they're in the works!
