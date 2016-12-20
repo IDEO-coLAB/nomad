@@ -10,7 +10,7 @@ const MODULE_NAME = 'SUBSCRIPTION'
 
 // How often to poll for new subscription messages
 // TODO: maybe move this into subscription.js
-const POLL_MILLIS = 1000 * 10
+const POLL_MILLIS = 1000 * 60
 
 // Class: Subscription
 //
