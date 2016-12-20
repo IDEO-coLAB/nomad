@@ -10,7 +10,7 @@ Data is a beautiful thing, but it's too hard to share live data, to process data
 
 ## Get Started  
 
-### Install
+### Install for Node.js
 Install the Nomad npm module:
 > (If you don't have [Node.js](https://nodejs.org/en/download/), install it first.)
 
@@ -18,10 +18,20 @@ Install the Nomad npm module:
 npm install --save nomad-stream
 ```
 
+Require the module:
+```javascript
+const Nomad = require('nomad-stream')
+```
+
+### Use in a browser with a script tag
+```html
+<script src="https://url/path/to/nomad.js"></script>
+```
+This makes ```Nomad``` available as a global object.
+
 ### Write some code to subscribe to a stream
 Subscribe to an existing nomad stream and log its messages to the console:
 ```javascript
-const Nomad = require('nomad-stream')
 const nomad = new Nomad()
 // Nomad constructor creates a new identity for the node so that use cases
 // where nomad is used only to subscribe, users don't have to think about creating
