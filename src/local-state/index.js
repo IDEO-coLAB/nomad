@@ -11,6 +11,10 @@ and any user code local state that needs to persist accross process failures. */
 // set head hash for existing subscription
 // clear head hash for existing subscription
 
+// PUBLISHING
+
+
+
 // LOCAL STATE
 // For a later rev?
 // get arbitrary data
@@ -21,12 +25,23 @@ and any user code local state that needs to persist accross process failures. */
 // endBatch: marks the end of a series of operations that should be atomic
 // A batch should be persisted atomically. This may only be relevant in Node.js not browser
 
+const objectStore = {
+	streams: {}
+}
+
+const getHeadForStream = (streamHash) => {
+	return objectStore.streams[streamHash]
+}
+
+const setHeadForStream = (streamHash, objectHash) => {
+	objectStore.streams[streamHash] = objectHash
+	return objectHash
+}
+
 module.exports = {
-	getSubscriptions,
-	removeSubscription,
-	getHeadForSubscription,
-	setHeadForSubscription,
-	clearHeadForSubscription
+	getHeadForStream,
+	setHeadForStream
+	// clearHeadForStream
 }
 
 
