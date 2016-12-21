@@ -1,21 +1,21 @@
-const expect = require('chai').expect
+// const expect = require('chai').expect
 
-const Subscription = require('./../src/subscription')
+// const Subscription = require('./../src/subscription')
 
-describe('Subscription:', () => {
-  const handlerA = () => {}
-  let removeHandlerA
+// describe('Subscription:', () => {
+//   const handlerA = () => {}
+//   let removeHandlerA
 
-  let subscription
-  let subscriptionId = 'someId'
+//   let subscription
+//   let subscriptionId = 'someId'
 
-  before(() => {})
-  after(() => {})
+//   before(() => {})
+//   after(() => {})
 
-  describe('constructor:', () => {
-    it('success', () => {
-      subscription = new Subscription(subscriptionId)
-      expect(subscription).to.exist
-    })
-  })
-})
+//   describe('constructor:', () => {
+//     it('success', () => {
+//       subscription = new Subscription(subscriptionId)
+//       expect(subscription).to.exist
+//     })
+//   })
+// })

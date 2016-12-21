@@ -1,125 +1,75 @@
 const fs = require('fs')
 const R = require('ramda')
+const path = require('path')
 
-const Subscription = require('./subscription')
-const { publish, publishRoot } = require('./publish')
+const ipfs = require('./utils/ipfs')
+
+
+// TODO: STILL BEING PORTED OVER
+const { publish } = require('./old-publish')
 const { getHead } = require('./node-cache')
+const Subscription = require('./old-subscription')
 const log = require('./utils/log')
-const { id } = require('./utils/ipfs')
 const { passOrDie, NomadError } = require('./utils/errors')
 
 const MODULE_NAME = 'NODE'
 
+// TODO: define what we want here...
+const DEFAULT_CONFIG = {
+  repo: `${path.resolve(__dirname)}/TESTER-ipfs-nomad-repo`,
+  ipfs: { emptyRepo: true, bits: 2048 }
+}
+
 // Class: Node
 //
-// @param {Object} userConfig (Array of peerIds)
+// @param {Object} config
 //
 module.exports = class Node {
-  constructor(userConfig = {}) {
-    this.identity = null
-    this.subscriptions = null
-    this.head = getHead()
+  constructor(config = DEFAULT_CONFIG) {
+    this.config = config
+    // this.identity = null
+    // this.subscriptions = null
+    // this.head = getHead()
   }
 
-  // Connect the sensor to the network and set the node's identity
+  // Start the node and connect it to the network
   //
-  // @return {Promise} Node
+  // @return {Promise}
   //
-  prepareToPublish() {
-    log.info(`${MODULE_NAME}: Connecting sensor to the network`)
-
-    // TODO: tidy this up into an connection-status checker fn
-    // since it gives the node an identity, I think it is ok to wrap it in
-    return id()
-      .then((identity) => {
-        this.identity = identity
-        log.info(`${MODULE_NAME}: IPFS daemon is running with ID: ${identity.ID}`)
-        return this
-      })
-      .catch(passOrDie(MODULE_NAME))
+  start() {
+    const self = this
+    return ipfs.init(self.config)
+      .then(ipfs.load)
+      .then(ipfs.goOnline)
+      .then(ipfs.id)
+      .then((id) => self.identity = id)
   }
 
-  // Publish data to the network
+  stop() {
+    return ipfs.goOffline()
+  }
+
+  // Check if the node is connected to the network
   //
-  // @param {Object} data which should be JSON.stringify-able
+  // @return {Bool}
+  //
+  isOnline() {
+    return ipfs.isOnline()
+  }
+
+  // Publish data
+  //
+  // @param {Object} data
   //
   // @return {Promise} Node
   //
   publish(data) {
-    let dataString = data
-    if (typeof data !== 'string') {
-      dataString = JSON.stringify(data)
+    log.info(`${MODULE_NAME}: Publishing`)
+
+    let dataBuf = data
+    if (Buffer.isBuffer(dataBuf)) {
+      dataString = new Buffer(dataBuf)
     }
-    log.info(`${MODULE_NAME}: Publishing new data`)
-    return publish(dataString, this)
-      .catch(passOrDie(MODULE_NAME))
-  }
-
-  // Publish the node's data root to the network
-  //
-  // @param {Object} data which should be JSON.stringify-able
-  //
-  // @return {Promise} Node
-  //
-  publishRoot(data) {
-    let dataString = data
-    if (typeof data !== 'string') {
-      dataString = JSON.stringify(data)
-    }
-    log.info(`${MODULE_NAME}: Publishing new root`)
-    return publishRoot(dataString, this)
-      .catch(passOrDie(MODULE_NAME))
-  }
-
-  // Add new subscription(s) to the node, attach an event handler
-  // and start polling for each new subscription
-  //
-  // @param {Array || String} nodeIds ([peerId, peerId, ...] or peerId)
-  // @param {Func} cb
-  //
-  subscribe(nodeIds, cb) {
-    if (typeof cb !== 'function') {
-      throw new NomadError('Callback must be a function')
-    }
-
-    let newSubscriptions = nodeIds
-    if (typeof newSubscriptions === 'string') {
-      newSubscriptions = [newSubscriptions]
-    }
-    // TODO: More sanity checking (e.g. for b58 strings)
-
-    let subscriptions = Object.assign({}, this.subscriptions)
-
-    R.forEach((subId) => {
-      if (!R.has(subId, subscriptions)) {
-        log.info(`${MODULE_NAME}: ${subId}: Subscribed`)
-        const newSub = new Subscription(subId)
-        newSub.addHandler(cb)
-        newSub.start()
-        subscriptions[subId] = newSub
-      }
-    }, newSubscriptions)
-
-    // Update the node's subscriptions
-    this.subscriptions = subscriptions
-  }
-
-  // Remove a subscription from the node
-  //
-  // @param {String} subscriptionId (peerId)
-  //
-  unsubscribe(nodeId) {
-    if (typeof nodeId !== 'string') {
-      throw new NomadError('nodeId must be a string')
-    }
-
-    let subscriptions = Object.assign({}, this.subscriptions)
-    if (R.has(nodeId, subscriptions)) {
-      delete subscriptions[nodeId]
-      log.info(`${MODULE_NAME}: ${nodeId}: Unsubscribed`)
-    }
-
-    // Update the node's subscriptions
-    this.subscriptions = subscriptions
+    return publish(dataBuf, this)
   }
 }
