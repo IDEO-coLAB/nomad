@@ -142,6 +142,6 @@ exports.pubsub.pub = (topic, data) => {
 
 exports.files = {}
 
-exports.files.add = (data) => {
-  return instance.files.add(data)
+exports.files.get = (hash) => {
+  return instance.files.get(hash)
 }

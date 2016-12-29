@@ -30,6 +30,12 @@ const createHead = (buf) => {
     ipfs.dag.create(buf)
   ])
   .then((results) => {
+    return Promise.all([
+      ipfs.object.put(results[0]),
+      ipfs.object.put(results[1])
+    ])
+  })
+  .then((results) => {
     const rootDAG = results[0]
     const linkDAG = results[1]
 

@@ -3,10 +3,27 @@ const expect = require('chai').expect
 const utils = require('./../utils/ipfs-utils')
 const localState = require('../../src/local-state')
 const Node = require('../../src/node')
+const ipfs = require('../../src/utils/ipfs')
+
+const ensureDataLink = (hash, targetData) => {
+  return ipfs.object.get(hash)
+  .then((headDAG) => {
+    const links = headDAG.toJSON().links
+    const dataLink = links.filter((link) => {
+      return link.name === 'data'
+    })[0]
+    return ipfs.object.get(dataLink.multihash)
+  })
+  .then((dataDAG) => {
+    const testData = dataDAG.toJSON().data.toString()
+    expect(testData).to.eql(targetData)
+  })
+}
 
 describe('publish:', () => {
   let node
   let nodeId
+
   const dataRoot = 'Some publishing data'
   const dataB = 'Some more publishing data'
   const dataC = 'Yet another publish'
@@ -45,7 +62,9 @@ describe('publish:', () => {
             stored = rootHash
             expect(rootHash).to.exist
             expect(localState.getHeadForStream(nodeId)).to.eql(rootHash)
+            return ensureDataLink(stored, dataRoot)
           })
+
       })
     })
 
@@ -60,12 +79,16 @@ describe('publish:', () => {
             stored = hashB
             expect(hashB).to.exist
             expect(localState.getHeadForStream(nodeId)).to.eql(hashB)
+            return ensureDataLink(stored, dataB)
+          })
+          .then(() => {
             return node.publish(dataC)
           })
           .then((hashC) => {
             stored = hashC
             expect(hashC).to.exist
             expect(localState.getHeadForStream(nodeId)).to.eql(hashC)
+            return ensureDataLink(stored, dataC)
           })
       })
     })
