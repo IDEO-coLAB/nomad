@@ -2,18 +2,16 @@ const child = require('child_process')
 const path = require('path')
 const log = require('./../../src/utils/log')
 
-const ipfs = 'ipfs'
-const repoPath = `${path.resolve(__dirname, '..')}/.ipfs-nomad-test`
-
-let ipfsDaemonHandle = null
+const MODULE_NAME = 'IPFS UTILS'
+const REPO_PATH = `${path.resolve(__dirname, '..')}/.ipfs-nomad-test`
 
 const config = {
-  repo: repoPath,
+  repo: REPO_PATH,
   ipfs: { emptyRepo: true, bits: 2048 }
 }
 
 function execAndLog(command, options) {
-  log.info(`IPFS test utils: ${command}`)
+  log.test(`${MODULE_NAME}: ${command}`)
 
   return new Promise((resolve, reject) => {
     child.exec(command, options, (err, stdout, stderr) => {
@@ -26,11 +24,11 @@ function execAndLog(command, options) {
 }
 
 function cleanRepo() {
-  return execAndLog(`rm -rf ${repoPath}`)
+  return execAndLog(`rm -rf ${REPO_PATH}`)
 }
 
 module.exports = {
-  config,
-  repoPath,
+  repo: REPO_PATH,
   cleanRepo,
+  config,
 }

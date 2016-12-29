@@ -3,41 +3,45 @@ const R = require('ramda')
 const path = require('path')
 
 const ipfs = require('./utils/ipfs')
-
-
-// TODO: STILL BEING PORTED OVER
-const { publish } = require('./old-publish')
-const { getHead } = require('./node-cache')
-const Subscription = require('./old-subscription')
 const log = require('./utils/log')
-const { passOrDie, NomadError } = require('./utils/errors')
+const { publish } = require('./publish')
 
 const MODULE_NAME = 'NODE'
 
-// TODO: define what we want here...
+/**
+ * TODO:
+ * - Better define config passing and init options
+ */
+
 const DEFAULT_CONFIG = {
   repo: `${path.resolve(__dirname)}/TESTER-ipfs-nomad-repo`,
   ipfs: { emptyRepo: true, bits: 2048 }
 }
 
-// Class: Node
-//
-// @param {Object} config
-//
+/**
+ * Node Class
+ */
 module.exports = class Node {
+  /**
+   * Node Constructor
+   *
+   * @param {Object} config
+   * @returns {Node}
+   */
   constructor(config = DEFAULT_CONFIG) {
     this.config = config
-    // this.identity = null
-    // this.subscriptions = null
-    // this.head = getHead()
+    this.identity = null
   }
 
-  // Start the node and connect it to the network
-  //
-  // @return {Promise}
-  //
+  /**
+   * Give the node an identity and bring it online
+   *
+   * @returns {Promise} resolves with the node's identity
+   */
   start() {
+    log.info(`${MODULE_NAME}: Starting`)
     const self = this
+
     return ipfs.init(self.config)
       .then(ipfs.load)
       .then(ipfs.goOnline)
@@ -45,31 +49,37 @@ module.exports = class Node {
       .then((id) => self.identity = id)
   }
 
+  /**
+   * Bring the node online
+   *
+   * @returns {Promise} resolves with the node's identity
+   */
   stop() {
+    log.info(`${MODULE_NAME}: Stopping`)
     return ipfs.goOffline()
   }
 
-  // Check if the node is connected to the network
-  //
-  // @return {Bool}
-  //
+  /**
+   * Check if the node is online
+   *
+   * @returns {Bool}
+   */
   isOnline() {
     return ipfs.isOnline()
   }
 
-  // Publish data
-  //
-  // @param {Object} data
-  //
-  // @return {Promise} Node
-  //
+  /**
+   * Publish data for the node
+   *
+   * @param {Buffer|String|Obj} data
+   * @returns {Promise} resolves with the newly published head's hash
+   */
   publish(data) {
     log.info(`${MODULE_NAME}: Publishing`)
 
-    let dataBuf = data
-    if (Buffer.isBuffer(dataBuf)) {
-      dataString = new Buffer(dataBuf)
+    if (R.isNil(data)) {
+      throw new Error('Publish requires a data argument')
     }
-    return publish(dataBuf, this)
+    return publish(this.identity.id, data)
   }
 }

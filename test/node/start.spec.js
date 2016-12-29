@@ -1,9 +1,9 @@
 const expect = require('chai').expect
 
 const utils = require('./../utils/ipfs-utils')
-const Node = require('./.././../src/node')
+const Node = require('../../src/node')
 
-describe('Start:', () => {
+describe('start:', () => {
   let node
 
   before(() => {

@@ -1,4 +1,4 @@
-// This file contains mocha's global before and after hooks
+// This file contains our test's global after hooks
 
 const utils = require('./../utils/ipfs-utils')
 
