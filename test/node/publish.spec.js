@@ -16,6 +16,9 @@ describe('publish:', () => {
   const dataB = 'Some more publishing data'
   const dataC = 'Yet another publish'
 
+
+  // TODO: Abstract this into the util once better understood
+  // TODO: Abstract this into the util once better understood
   // TODO: Abstract this into the util once better understood
   const ensureIpfsData = (hash, targetData) => {
     return ipfs.object.get(hash, HASH_ENCODING)
@@ -35,6 +38,10 @@ describe('publish:', () => {
         expect(deserializedBuf.toString()).to.eql(targetData)
       })
   }
+  // TODO: Abstract this into the util once better understood
+  // TODO: Abstract this into the util once better understood
+  // TODO: Abstract this into the util once better understood
+
 
   before(() => {
     return Promise.all([
@@ -57,7 +64,7 @@ describe('publish:', () => {
   })
 
   after(() => {
-    return Promise.all([nodeA.teardown()])
+    return Promise.all([nodeA.teardown(), ipfs.teardown()])
   })
 
   it('throws without data', () => {

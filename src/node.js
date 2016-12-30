@@ -87,4 +87,20 @@ module.exports = class Node {
     }
     return this._publish(this.identity.id, data)
   }
+
+  /**
+   * Subscribe to events based on a list of ids and set a callback to be
+   * executed when a new event comes in from one of the ids
+   *
+   * @param {Array|String} ids
+   * @param {Function} callback
+   */
+  subscribe(ids, callback) {
+    log.info(`${MODULE_NAME}: Subscribing`)
+
+    if (R.isNil(ids)) {
+      throw new Error('Subscribe requires ids')
+    }
+
+  }
 }
