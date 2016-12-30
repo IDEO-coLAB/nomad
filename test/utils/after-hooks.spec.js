@@ -1,7 +1,9 @@
-// This file contains our test's global after hooks
+/**
+ * This contains all hooks run after tests end
+ */
 
-const utils = require('./../utils/ipfs-utils')
+const cmd = require('./../utils/cmd-runner')
 
 after(() => {
-  utils.cleanRepo()
+  cmd.cleanRepo()
 })

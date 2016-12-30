@@ -25,26 +25,23 @@ exports = module.exports
  * @returns {Promise} resolves with the newly added DAG object
  */
 const createHead = (buf) => {
-  return Promise.all([
-    ipfs.dag.create(),
-    ipfs.dag.create(buf)
-  ])
-  .then((results) => {
-    return Promise.all([
-      ipfs.object.put(results[0]),
-      ipfs.object.put(results[1])
-    ])
-  })
-  .then((results) => {
-    const rootDAG = results[0]
-    const linkDAG = results[1]
+  return ipfs.files.add(buf)
+    .then((files) => {
+      return Promise.all([
+        ipfs.object.new(),
+        ipfs.object.get(files[0].hash)
+      ])
+    })
+    .then((results) => {
+      const emptyHeadDAG = results[0]
+      const dataDAG = results[1]
 
-    const link = linkDAG.toJSON()
-    link.name = 'data'
+      const link = dataDAG.toJSON()
+      link.name = 'data'
 
-    return ipfs.dag.addLink(rootDAG, link)
-  })
-  .then(ipfs.object.put)
+      return ipfs.object.addLink(emptyHeadDAG.multihash, link)
+    })
+    .then(ipfs.object.put)
 }
 
 /**
@@ -58,11 +55,12 @@ const createHead = (buf) => {
 const broadcastAndStore = (id, dag) => {
   log.info(`${MODULE_NAME}: Broadcasting and storing ${dag.toJSON().multihash}`)
 
-  const mhBuf = new Buffer(dag.toJSON().multihash)
+  const mh = dag.toJSON().multihash
+  const mhBuf = new Buffer(mh)
 
   return ipfs.pubsub.pub(id, mhBuf)
     .then(() => {
-      return setHeadForStream(id, dag.toJSON().multihash)
+      return setHeadForStream(id, mh)
     })
     // TODO: catch might handle 'rollbacks' in early versions
 }
@@ -92,18 +90,18 @@ const publishRoot = (id, buf) => {
 const publishData = (id, buf) => {
   log.info(`${MODULE_NAME}: Publishing new data`)
 
-  let oldHeadDAG
+  const prevHash = getHeadForStream(id)
 
-  return createHead(buf)
-    .then((dag) => {
-      oldHeadDAG = dag
-      const prevHash = getHeadForStream(id)
-      return ipfs.object.get(prevHash) // avoid this lookup by storing whole DAG
-    })
-    .then((dag) => {
-      const prevJSON = dag.toJSON()
-      prevJSON.name = 'prev'
-      return ipfs.dag.addLink(oldHeadDAG, prevJSON)
+  return Promise.all([
+      createHead(buf),
+      ipfs.object.get(prevHash) // avoid this lookup by storing whole DAG
+    ])
+    .then((results) => {
+      const newHeadDAG = results[0]
+      const link = results[1].toJSON()
+      link.name = 'prev'
+
+      return ipfs.object.addLink(newHeadDAG.multihash, link)
     })
     .then(ipfs.object.put)
     .then((dag) => broadcastAndStore(id, dag))

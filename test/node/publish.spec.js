@@ -1,49 +1,67 @@
 const expect = require('chai').expect
 
-const utils = require('./../utils/ipfs-utils')
+const ipfsFactory = require('./../utils/factory-ipfs')
+const nodeFactory = require('./../utils/factory-node')
 const localState = require('../../src/local-state')
-const Node = require('../../src/node')
-const ipfs = require('../../src/utils/ipfs')
 
-const ensureDataLink = (hash, targetData) => {
-  return ipfs.object.get(hash)
-  .then((headDAG) => {
-    const links = headDAG.toJSON().links
-    const dataLink = links.filter((link) => {
-      return link.name === 'data'
-    })[0]
-    return ipfs.object.get(dataLink.multihash)
-  })
-  .then((dataDAG) => {
-    const testData = dataDAG.toJSON().data.toString()
-    expect(testData).to.eql(targetData)
-  })
-}
+const HASH_ENCODING = { enc: 'base58' }
 
 describe('publish:', () => {
   let node
   let nodeId
+  let ipfs
 
   const dataRoot = 'Some publishing data'
   const dataB = 'Some more publishing data'
   const dataC = 'Yet another publish'
 
+  const ensureIpfsData = (hash, targetData) => {
+    return ipfs.object.get(hash, HASH_ENCODING)
+      .then((headDAG) => {
+        const links = headDAG.toJSON().links
+        const dataLink = links.filter((link) => {
+          return link.name === 'data'
+        })[0]
+        return ipfs.object.get(dataLink.multihash, HASH_ENCODING)
+      })
+      .then((dataDAG) => {
+        const testDataBuf = dataDAG.toJSON().data
+        // TODO: figure out a better way or the IPFS API way
+        // of deserializing a dagnode's data. This IPLD object
+        // comes with some unicode commands at the start and end
+        const deserializedBuf = testDataBuf.slice(4, testDataBuf.length-2)
+        expect(deserializedBuf.toString()).to.eql(targetData)
+      })
+  }
+
   before(() => {
-    node = new Node(utils.config)
-    return node.start()
-      .then(() => {
+    return Promise.all([
+        nodeFactory.create(),
+        ipfsFactory.create('01')
+      ])
+      .then((results) => {
+        return Promise.all([
+          results[0].start(),
+          results[1].start()
+        ])
+      })
+      .then((results) => {
+        node = results[0]
         nodeId = node.identity.id
-        return true
+        ipfs = results[1]
+
+        // Connect the running ipfs instance to the new node
+        return ipfs.swarm.connect(node.identity.addresses[0])
       })
   })
 
   after(() => {
-    return node.stop().then(utils.cleanRepo)
+    return Promise.all([node.teardown(), ipfs.teardown()])
   })
 
   it('throws without data', () => {
-    const throwerA = () => node.publish() // undefined
-    const throwerB = () => node.publish(null)
+    const throwerA = () => node.publish()       // arg is 'undefined'
+    const throwerB = () => node.publish(null)   // arg is null
     expect(throwerA).to.throw
     expect(throwerB).to.throw
   })
@@ -62,7 +80,7 @@ describe('publish:', () => {
             stored = rootHash
             expect(rootHash).to.exist
             expect(localState.getHeadForStream(nodeId)).to.eql(rootHash)
-            return ensureDataLink(stored, dataRoot)
+            return ensureIpfsData(stored, dataRoot)
           })
 
       })
@@ -79,7 +97,7 @@ describe('publish:', () => {
             stored = hashB
             expect(hashB).to.exist
             expect(localState.getHeadForStream(nodeId)).to.eql(hashB)
-            return ensureDataLink(stored, dataB)
+            return ensureIpfsData(stored, dataB)
           })
           .then(() => {
             return node.publish(dataC)
@@ -88,7 +106,7 @@ describe('publish:', () => {
             stored = hashC
             expect(hashC).to.exist
             expect(localState.getHeadForStream(nodeId)).to.eql(hashC)
-            return ensureDataLink(stored, dataC)
+            return ensureIpfsData(stored, dataC)
           })
       })
     })

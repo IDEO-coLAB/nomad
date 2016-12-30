@@ -46,7 +46,10 @@ module.exports = class Node {
       .then(ipfs.load)
       .then(ipfs.goOnline)
       .then(ipfs.id)
-      .then((id) => self.identity = id)
+      .then((id) => {
+        self.identity = id
+        return self
+      })
   }
 
   /**

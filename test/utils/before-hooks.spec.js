@@ -1,7 +1,9 @@
-// This file contains our test's global after hooks
+/**
+ * This contains all hooks run before tests start
+ */
 
-const utils = require('./../utils/ipfs-utils')
+const cmd = require('./../utils/cmd-runner')
 
 before(() => {
-  utils.cleanRepo()
+  cmd.cleanRepo()
 })

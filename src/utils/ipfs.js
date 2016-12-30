@@ -1,13 +1,8 @@
 const bs58 = require('bs58')
 const IPFS = require('ipfs')
 const R = require('ramda')
-const dagPB = require('ipld-dag-pb')
-const CID = require('cids')
 
-const DAGNode = dagPB.DAGNode
-
-const log = require('./log')
-const { NomadError, IPFSErrorDaemonOffline } = require('./errors')
+// const log = require('./log')
 
 exports = module.exports
 
@@ -84,32 +79,6 @@ exports.publish = (data) => {
   return instance.pubsub.publish(data)
 }
 
-exports.dag = {}
-
-exports.dag.create = (data) => {
-  ensureInstance()
-  return new Promise((resolve, reject) => {
-    DAGNode.create(data, (err, dag) => {
-      if (err) {
-        return reject(err)
-      }
-      resolve(dag)
-    })
-  })
-}
-
-exports.dag.addLink = (dag, link) => {
-  ensureInstance()
-  return new Promise((resolve, reject) => {
-    DAGNode.addLink(dag, link, (err, dagNode) => {
-      if (err) {
-        return reject(err)
-      }
-      resolve(dagNode)
-    })
-  })
-}
-
 exports.object = {}
 
 exports.object.put = (dag) => {
@@ -122,10 +91,17 @@ exports.object.new = () => {
   return instance.object.new()
 }
 
+exports.object.addLink = (hash, DAGLink) => {
+  ensureInstance()
+  return instance.object.patch.addLink(hash, DAGLink)
+}
+
 exports.object.get = (hash) => {
   ensureInstance()
-  const cid = new CID(hash)
-  return instance.object.get(cid.multihash)
+  // const cid = new CID(hash)
+  // return instance.object.get(cid.multihash)
+  console.log('getting in object.get', hash)
+  return instance.object.get(hash, { enc: 'base58' })
 }
 
 exports.pubsub = {}
@@ -135,13 +111,9 @@ exports.pubsub.pub = (topic, data) => {
   return instance.pubsub.publish(topic, data)
 }
 
-
-
-
-
-
 exports.files = {}
 
-exports.files.get = (hash) => {
-  return instance.files.get(hash)
+exports.files.add = (data) => {
+  ensureInstance()
+  return instance.files.add(data)
 }
