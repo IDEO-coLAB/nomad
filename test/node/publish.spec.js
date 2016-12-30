@@ -15,6 +15,7 @@ describe('publish:', () => {
   const dataB = 'Some more publishing data'
   const dataC = 'Yet another publish'
 
+  // TODO: Abstract this into the util once better understood
   const ensureIpfsData = (hash, targetData) => {
     return ipfs.object.get(hash, HASH_ENCODING)
       .then((headDAG) => {

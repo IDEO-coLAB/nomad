@@ -1,22 +1,25 @@
-// const expect = require('chai').expect
+const expect = require('chai').expect
 
-// const cmd = require('./../utils/cmd-runner')
-// const Node = require('../../src/node')
+const cmd = require('./../utils/cmd-runner')
+const nodeFactory = require('./../utils/factory-node')
 
-// describe('isOnline:', () => {
-//   let node
+describe('isOnline:', () => {
+  let node
 
-//   before(() => {
-//     node = new Node(utils.config)
-//   })
+  before(() => {
+    return nodeFactory.create()
+      .then((instance) => {
+        node = instance
+      })
+  })
 
-//   after(() => {
-//     return node.stop().then(utils.cleanRepo)
-//   })
+  after(() => {
+    return node.teardown()
+  })
 
-//   it('from offline to online', () => {
-//     return node.start().then((id) => {
-//       expect(node.isOnline()).not.to.eql(null)
-//     })
-//   })
-// })
+  it('from offline to online', () => {
+    return node.start().then((id) => {
+      expect(node.isOnline()).not.to.eql(null)
+    })
+  })
+})
