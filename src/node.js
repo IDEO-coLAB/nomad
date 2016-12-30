@@ -1,10 +1,10 @@
-const fs = require('fs')
 const R = require('ramda')
 const path = require('path')
+const IPFS = require('ipfs')
 
-const ipfs = require('./utils/ipfs')
+const promisifyIPFS = require('./utils/promisify-ipfs')
 const log = require('./utils/log')
-const { publish } = require('./publish')
+const publish = require('./publish')
 
 const MODULE_NAME = 'NODE'
 
@@ -29,27 +29,11 @@ module.exports = class Node {
    * @returns {Node}
    */
   constructor(config = DEFAULT_CONFIG) {
-    this.config = config
+    this._ipfsConfig = config
+    this._ipfs = promisifyIPFS(new IPFS(this._ipfsConfig.repo))
+    this._publish = publish(this._ipfs)
+
     this.identity = null
-  }
-
-  /**
-   * Give the node an identity and bring it online
-   *
-   * @returns {Promise} resolves with the node's identity
-   */
-  start() {
-    log.info(`${MODULE_NAME}: Starting`)
-    const self = this
-
-    return ipfs.init(self.config)
-      .then(ipfs.load)
-      .then(ipfs.goOnline)
-      .then(ipfs.id)
-      .then((id) => {
-        self.identity = id
-        return self
-      })
   }
 
   /**
@@ -57,9 +41,27 @@ module.exports = class Node {
    *
    * @returns {Promise} resolves with the node's identity
    */
+  start() {
+    log.info(`${MODULE_NAME}: Starting`)
+
+    return this._ipfs.initP(this._ipfsConfig.ipfs)
+      .then(this._loadP)
+      .then(this._ipfs.goOnlineP)
+      .then(this._ipfs.id)
+      .then((id) => {
+        this.identity = id
+        return this
+      })
+  }
+
+  /**
+   * Take the node offline
+   *
+   * @returns {Promise} resolves with the node's identity
+   */
   stop() {
     log.info(`${MODULE_NAME}: Stopping`)
-    return ipfs.goOffline()
+    return this._ipfs.goOfflineP()
   }
 
   /**
@@ -68,7 +70,7 @@ module.exports = class Node {
    * @returns {Bool}
    */
   isOnline() {
-    return ipfs.isOnline()
+    return this._ipfs.isOnline()
   }
 
   /**
@@ -83,6 +85,6 @@ module.exports = class Node {
     if (R.isNil(data)) {
       throw new Error('Publish requires a data argument')
     }
-    return publish(this.identity.id, data)
+    return this._publish(this.identity.id, data)
   }
 }

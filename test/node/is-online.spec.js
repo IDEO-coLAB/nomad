@@ -1,7 +1,7 @@
 const expect = require('chai').expect
 
 const cmd = require('./../utils/cmd-runner')
-const nodeFactory = require('./../utils/factory-node')
+const nodeFactory = require('./../utils/temp-node')
 
 describe('isOnline:', () => {
   let node

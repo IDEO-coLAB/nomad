@@ -1,13 +1,14 @@
 const expect = require('chai').expect
 
-const ipfsFactory = require('./../utils/factory-ipfs')
-const nodeFactory = require('./../utils/factory-node')
+const ipfsFactory = require('./../utils/temp-ipfs')
+const nodeFactory = require('./../utils/temp-node')
 const localState = require('../../src/local-state')
 
 const HASH_ENCODING = { enc: 'base58' }
 
 describe('publish:', () => {
-  let node
+  let nodeA
+  let nodeB
   let nodeId
   let ipfs
 
@@ -37,32 +38,31 @@ describe('publish:', () => {
 
   before(() => {
     return Promise.all([
-        nodeFactory.create(),
-        ipfsFactory.create('01')
+        nodeFactory.create(1),
+        ipfsFactory.create(2)
       ])
       .then((results) => {
+        nodeA = results[0]
+        ipfs = results[1]
         return Promise.all([
-          results[0].start(),
-          results[1].start()
+          nodeA.startWithOffset(),
+          ipfs.start()
         ])
       })
-      .then((results) => {
-        node = results[0]
-        nodeId = node.identity.id
-        ipfs = results[1]
-
-        // Connect the running ipfs instance to the new node
-        return ipfs.swarm.connect(node.identity.addresses[0])
+      .then(() => {
+        nodeId = nodeA.identity.id
+        // Connect ipfs to the node - used for network data confirmation
+        return ipfs.swarm.connect(nodeA.identity.addresses[0])
       })
   })
 
   after(() => {
-    return Promise.all([node.teardown(), ipfs.teardown()])
+    return Promise.all([nodeA.teardown()])
   })
 
   it('throws without data', () => {
-    const throwerA = () => node.publish()       // arg is 'undefined'
-    const throwerB = () => node.publish(null)   // arg is null
+    const throwerA = () => nodeA.publish()       // arg is 'undefined'
+    const throwerB = () => nodeA.publish(null)   // arg is null
     expect(throwerA).to.throw
     expect(throwerB).to.throw
   })
@@ -76,7 +76,7 @@ describe('publish:', () => {
       })
 
       it('root is published and the head is stored locally', () => {
-        return node.publish(dataRoot)
+        return nodeA.publish(dataRoot)
           .then((rootHash) => {
             stored = rootHash
             expect(rootHash).to.exist
@@ -93,7 +93,7 @@ describe('publish:', () => {
       })
 
       it('subsequent publishes work and the head hash is stored locally', () => {
-        return node.publish(dataB)
+        return nodeA.publish(dataB)
           .then((hashB) => {
             stored = hashB
             expect(hashB).to.exist
@@ -101,7 +101,7 @@ describe('publish:', () => {
             return ensureIpfsData(stored, dataB)
           })
           .then(() => {
-            return node.publish(dataC)
+            return nodeA.publish(dataC)
           })
           .then((hashC) => {
             stored = hashC

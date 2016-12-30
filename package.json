@@ -34,6 +34,7 @@
     "bs58": "3.0.0",
     "chai": "3.5.0",
     "debug": "2.2.0",
+    "es6-promisify": "5.0.0",
     "eslint": "3.8.1",
     "eslint-config-airbnb-base": "8.0.0",
     "eslint-plugin-import": "1.16.0",
@@ -51,6 +52,9 @@
     "task-queue": "^1.0.2"
   },
   "devDependencies": {
+    "fs-pull-blob-store": "0.4.1",
+    "ipfs-repo": "0.11.2",
+    "left-pad": "1.1.3",
     "mocha": "^3.1.2"
   }
 }
