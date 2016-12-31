@@ -9,18 +9,13 @@ const HASH_ENCODING = { enc: 'base58' }
 
 describe('publish:', () => {
   let nodeA
-  let nodeB
-  let nodeId
+  let nodeAId
   let ipfs
 
-  const dataRoot = 'Some publishing data'
-  const dataB = 'Some more publishing data'
-  const dataC = 'Yet another publish'
+  const dataRoot = new Buffer('Some publishing data')
+  const dataB = new Buffer('Some more publishing data')
+  const dataC = new Buffer('Yet another publish')
 
-
-  // TODO: Abstract this into the util once better understood
-  // TODO: Abstract this into the util once better understood
-  // TODO: Abstract this into the util once better understood
   const ensureIpfsData = (hash, targetData) => {
     return ipfs.object.get(hash, HASH_ENCODING)
       .then((headDAG) => {
@@ -36,13 +31,9 @@ describe('publish:', () => {
         // of deserializing a dagnode's data. This IPLD object
         // comes with some unicode commands at the start and end
         const deserializedBuf = testDataBuf.slice(4, testDataBuf.length-2)
-        expect(deserializedBuf.toString()).to.eql(targetData)
+        expect(deserializedBuf).to.eql(targetData)
       })
   }
-  // TODO: Abstract this into the util once better understood
-  // TODO: Abstract this into the util once better understood
-  // TODO: Abstract this into the util once better understood
-
 
   before(() => {
     return Promise.all([
@@ -58,7 +49,7 @@ describe('publish:', () => {
         ])
       })
       .then(() => {
-        nodeId = nodeA.identity.id
+        nodeAId = nodeA.identity.id
         // Connect ipfs to the node - used for network data confirmation
         ipfs.swarm.connectP = promisify(ipfs.swarm.connect)
         return ipfs.swarm.connectP(nodeA.identity.addresses[0])
@@ -86,7 +77,7 @@ describe('publish:', () => {
 
     describe('root:', () => {
       it('no head stored locally before root is published', () => {
-        expect(localState.getHeadForStream(nodeId)).to.eql(undefined)
+        expect(localState.getHeadForStream(nodeAId)).to.eql(undefined)
       })
 
       it('root is published and the head is stored locally', () => {
@@ -94,7 +85,7 @@ describe('publish:', () => {
           .then((rootHash) => {
             stored = rootHash
             expect(rootHash).to.exist
-            expect(localState.getHeadForStream(nodeId)).to.eql(rootHash)
+            expect(localState.getHeadForStream(nodeAId)).to.eql(rootHash)
             return ensureIpfsData(stored, dataRoot)
           })
 
@@ -103,7 +94,7 @@ describe('publish:', () => {
 
     describe('non-root:', () => {
       it('a head is found locally once a publish has occurred', () => {
-        expect(localState.getHeadForStream(nodeId)).to.eql(stored)
+        expect(localState.getHeadForStream(nodeAId)).to.eql(stored)
       })
 
       it('subsequent publishes work and the head hash is stored locally', () => {
@@ -111,7 +102,7 @@ describe('publish:', () => {
           .then((hashB) => {
             stored = hashB
             expect(hashB).to.exist
-            expect(localState.getHeadForStream(nodeId)).to.eql(hashB)
+            expect(localState.getHeadForStream(nodeAId)).to.eql(hashB)
             return ensureIpfsData(stored, dataB)
           })
           .then(() => {
@@ -120,7 +111,7 @@ describe('publish:', () => {
           .then((hashC) => {
             stored = hashC
             expect(hashC).to.exist
-            expect(localState.getHeadForStream(nodeId)).to.eql(hashC)
+            expect(localState.getHeadForStream(nodeAId)).to.eql(hashC)
             return ensureIpfsData(stored, dataC)
           })
       })
