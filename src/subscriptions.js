@@ -36,4 +36,3 @@ exports.unsubscribe = (ipfs) => {
     subscriptions.delete(id)
   }
 }
-

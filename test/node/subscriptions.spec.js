@@ -16,10 +16,6 @@ describe('subscriptions:', () => {
   let nodeC
   let nodeCId
 
-  const dataRoot = 'Root publish'
-  const dataTwo = 'Publish number 2'
-  const dataThree = 'Publish number 3'
-
   const ensureIpfsData = (hash, targetData, done) => {
     return nodeA._ipfs.object.get(hash, HASH_ENCODING)
       .then((headDAG) => {
@@ -83,7 +79,7 @@ describe('subscriptions:', () => {
   })
 
   describe('subscribe', () => {
-    it('throws when subscribing without anything', () => {
+    it('throws when subscribing with no args', () => {
       const throwerA = () => nodeA.subscribe()
       expect(throwerA).to.throw
     })
@@ -111,19 +107,24 @@ describe('subscriptions:', () => {
       expect(throwerA).to.throw
     })
 
+    it('A subscribes to B successfully', () => {
+      nodeA.subscribe([nodeBId], () => {})
+      expect(nodeA.subscriptions.size).to.eql(1)
+      expect(nodeA.subscriptions.has(nodeBId)).to.eql(true)
+      nodeA.unsubscribe(nodeBId)
+    })
+
     describe('does not overwrite existing subscriptions:', () => {
       let handlerB = () => {}
       let handlerC = () => {}
 
+      before(() => {
+        nodeA.subscribe([nodeBId], handlerB)
+      })
+
       after(() => {
         nodeA.unsubscribe(nodeBId)
         nodeA.unsubscribe(nodeCId)
-      })
-
-      it('adds a subscription to the node', () => {
-        nodeA.subscribe([nodeBId], handlerB)
-        expect(nodeA.subscriptions.size).to.eql(1)
-        expect(nodeA.subscriptions.has(nodeBId)).to.eql(true)
       })
 
       it('does not duplicate subscriptions', () => {
@@ -148,7 +149,7 @@ describe('subscriptions:', () => {
         nodeA.unsubscribe(nodeBId)
       })
 
-      it(`A receives B's new node head`, (done) => {
+      it(`A receives a valid node head from B`, (done) => {
         const pubData = new Buffer('This is a publication')
 
         nodeA.subscribe([nodeBId], (d) => {
