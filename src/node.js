@@ -5,6 +5,7 @@ const IPFS = require('ipfs')
 const promisifyIPFS = require('./utils/promisify-ipfs')
 const log = require('./utils/log')
 const publish = require('./publish')
+const Subscription = require('./subscription')
 
 const MODULE_NAME = 'NODE'
 
@@ -19,7 +20,7 @@ const DEFAULT_CONFIG = {
 }
 
 /**
- * Node Class
+ * Class: Node
  */
 module.exports = class Node {
   /**
@@ -34,6 +35,7 @@ module.exports = class Node {
     this._publish = publish(this._ipfs)
 
     this.identity = null
+    this.subscriptions = new Map()
   }
 
   /**
@@ -89,18 +91,58 @@ module.exports = class Node {
   }
 
   /**
-   * Subscribe to events based on a list of ids and set a callback to be
-   * executed when a new event comes in from one of the ids
+   * Subscribe a callback be triggered when new events come in from a list of ids
    *
-   * @param {Array|String} ids
+   * @param {Array} ids
    * @param {Function} callback
    */
   subscribe(ids, callback) {
     log.info(`${MODULE_NAME}: Subscribing`)
 
-    if (R.isNil(ids)) {
-      throw new Error('Subscribe requires ids')
+    let subIds = ids
+
+    // nothing is passed
+    if (R.isNil(subIds)) {
+      throw new Error(`'ids' must be an array`)
+    }
+    // ids not passed, callback is
+    if (typeof subIds === 'function') {
+      throw new Error(`'ids' must be an array`)
+    }
+    // ids passed but not array
+    if (!R.isArrayLike(subIds)) {
+      throw new Error(`'ids' must be an array`)
+    }
+    // ids passed but empty
+    if (R.isEmpty(subIds)) {
+      throw new Error(`'ids' must contain at least one id`)
     }
 
+    if (typeof callback !== 'function') {
+      throw new Error(`'callback' must be a function`)
+    }
+
+    const newSubs = R.filter((id) => !this.subscriptions.has(id), subIds)
+    newSubs.forEach((id) => {
+      const sub = new Subscription(id, this._ipfs)
+      // sub.addHandler(callback)
+      this.subscriptions.set(id, sub)
+    })
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

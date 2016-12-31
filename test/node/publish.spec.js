@@ -1,4 +1,5 @@
 const expect = require('chai').expect
+const promisify = require('es6-promisify')
 
 const ipfsFactory = require('./../utils/temp-ipfs')
 const nodeFactory = require('./../utils/temp-node')
@@ -59,7 +60,13 @@ describe('publish:', () => {
       .then(() => {
         nodeId = nodeA.identity.id
         // Connect ipfs to the node - used for network data confirmation
-        return ipfs.swarm.connect(nodeA.identity.addresses[0])
+        ipfs.swarm.connectP = promisify(ipfs.swarm.connect)
+        return ipfs.swarm.connectP(nodeA.identity.addresses[0])
+      })
+      .then(() => {
+        // Note: Connection timing is an issue so we need to wait
+        // for the connections to open
+        return new Promise((resolve) => setTimeout(resolve, 1000))
       })
   })
 
