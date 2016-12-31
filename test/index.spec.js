@@ -4,7 +4,7 @@ const expect = require('chai').expect
 const Export = require('./../src')
 const Node = require('./../src/node')
 
-describe('Index:', () => {
+describe('export:', () => {
   describe('exports a valid Node constructor:', () => {
     it('success', () => {
       expect(R.isNil(Export)).to.eql(false)

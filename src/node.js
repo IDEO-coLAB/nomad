@@ -12,6 +12,7 @@ const MODULE_NAME = 'NODE'
 /**
  * TODO:
  * - Better define config passing and init options
+ * - Better / unified error handling within and across modules
  */
 
 const DEFAULT_CONFIG = {
@@ -101,6 +102,7 @@ module.exports = class Node {
 
     let subIds = ids
 
+    // TODO: abstract these errors into a unified handler
     // nothing is passed
     if (R.isNil(subIds)) {
       throw new Error(`'ids' must be an array`)
