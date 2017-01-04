@@ -1,3 +1,5 @@
+// HEAVY WIP
+
 /* Local state operations include tracking which nodes a node is subscribed
 to, which messages (for each subscription) have been delivered to user code,
 and any user code local state that needs to persist accross process failures. */
@@ -25,24 +27,44 @@ and any user code local state that needs to persist accross process failures. */
 // endBatch: marks the end of a series of operations that should be atomic
 // A batch should be persisted atomically. This may only be relevant in Node.js not browser
 
-const objectStore = {
-	streams: {}
-}
+//
+//
+// Gavin note: I tweaked this into a simple class because multiple nodes end
+// up writing to the same store--needed to change that for mult-node testing
+//
+//
 
-const getHeadForStream = (streamHash) => {
-	return objectStore.streams[streamHash]
-}
+// const objectStore = {
+// 	streams: {}
+// }
 
-const setHeadForStream = (streamHash, objectHash) => {
-	objectStore.streams[streamHash] = objectHash
-	return objectHash
+// const getHeadForStream = (streamHash) => {
+// 	return objectStore.streams[streamHash]
+// }
+
+// const setHeadForStream = (streamHash, objectHash) => {
+// 	objectStore.streams[streamHash] = objectHash
+// 	return objectHash
+// }
+
+class State {
+  constructor () {
+    this.store = { streams: {} }
+  }
+
+  getHeadForStream (streamHash) {
+    return this.store.streams[streamHash]
+  }
+
+  setHeadForStream (streamHash, objectHash) {
+   this.store.streams[streamHash] = objectHash
+   return objectHash
+  }
 }
 
 module.exports = {
-	getHeadForStream,
-	setHeadForStream
+  State,
+	// getHeadForStream,
+	// setHeadForStream
 	// clearHeadForStream
 }
-
-
-

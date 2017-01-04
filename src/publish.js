@@ -1,15 +1,15 @@
 const log = require('./utils/log')
-const { getHeadForStream, setHeadForStream } = require('./local-state')
+// const { getHeadForStream, setHeadForStream } = require('./local-state')
 
 /**
  * TODO:
- * - local-state should store entire DAG objects to avoid ipfs lookups
+ * - possibly: local-state should store entire DAG objects to avoid ipfs lookups
  * - make broadcastAndStore 'atomic' even at a basic level
  */
 
 const MODULE_NAME = 'PUBLISH'
 
-module.exports = (ipfs) => {
+module.exports = (self) => {
   /**
    * Create a new publishing head object with the appropriate 'data' link
    *
@@ -17,11 +17,11 @@ module.exports = (ipfs) => {
    * @returns {Promise} resolves with the newly added DAG object
    */
   const createHead = (buf) => {
-    return ipfs.files.add(buf)
+    return self._ipfs.files.add(buf)
       .then((files) => {
         return Promise.all([
-          ipfs.object.new(),
-          ipfs.object.get(files[0].hash, { enc: 'base58' })
+          self._ipfs.object.new(),
+          self._ipfs.object.get(files[0].hash, { enc: 'base58' })
         ])
       })
       .then((results) => {
@@ -31,9 +31,9 @@ module.exports = (ipfs) => {
         const link = dataDAG.toJSON()
         link.name = 'data'
 
-        return ipfs.object.patch.addLink(emptyHeadDAG.multihash, link)
+        return self._ipfs.object.patch.addLink(emptyHeadDAG.multihash, link)
       })
-      .then(ipfs.object.put)
+      .then(self._ipfs.object.put)
   }
 
   /**
@@ -50,11 +50,12 @@ module.exports = (ipfs) => {
     const mh = dag.toJSON().multihash
     const mhBuf = new Buffer(mh)
 
-    return ipfs.pubsub.publish(id, mhBuf)
+    return self._ipfs.pubsub.publish(id, mhBuf)
       .then(() => {
-        return setHeadForStream(id, mh)
+        console.log(id, 'PUBLISHING: ', mh)
+        return self.heads.setHeadForStream(id, mh)
       })
-      // TODO: catch might handle 'rollbacks' in early versions
+      // Note: catch might handle the idea of 'rollbacks' in an early 'atomic' version
   }
 
   /**
@@ -82,20 +83,24 @@ module.exports = (ipfs) => {
   const publishData = (id, buf) => {
     log.info(`${MODULE_NAME}: Publishing new data`)
 
-    const prevHash = getHeadForStream(id)
+    const prevHash = self.heads.getHeadForStream(id)
 
     return Promise.all([
         createHead(buf),
-        ipfs.object.get(prevHash, { enc: 'base58' }) // avoid this lookup by storing whole DAG
+        self._ipfs.object.get(prevHash, { enc: 'base58' }) // avoid this lookup by storing whole DAG
       ])
       .then((results) => {
         const newHeadDAG = results[0]
         const link = results[1].toJSON()
         link.name = 'prev'
 
-        return ipfs.object.patch.addLink(newHeadDAG.multihash, link)
+        console.log('prev', link)
+        console.log('prev hash', prevHash)
+        console.log('')
+
+        return self._ipfs.object.patch.addLink(newHeadDAG.multihash, link)
       })
-      .then(ipfs.object.put)
+      .then(self._ipfs.object.put)
       .then((dag) => broadcastAndStore(id, dag))
   }
 
@@ -116,7 +121,7 @@ module.exports = (ipfs) => {
 
     // TODO: ensure getHeadForStream is efficient in its lookups
     // or store something locally once publish happens and refer here first
-    if (getHeadForStream(id)) {
+    if (self.heads.getHeadForStream(id)) {
       return publishData(id, dataBuf)
     }
     return publishRoot(id, dataBuf)

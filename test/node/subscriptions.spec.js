@@ -2,11 +2,10 @@ const expect = require('chai').expect
 const promisify = require('es6-promisify')
 
 const nodeFactory = require('./../utils/temp-node')
-const localState = require('../../src/local-state')
 
 const HASH_ENCODING = { enc: 'base58' }
 
-describe('subscriptions:', () => {
+describe.only('subscriptions:', () => {
   let nodeA
   let nodeAId
 
@@ -34,7 +33,6 @@ describe('subscriptions:', () => {
         expect(deserializedBuf).to.eql(targetData)
         done()
       })
-      .catch(console.log)
   }
 
   before(() => {
@@ -145,20 +143,75 @@ describe('subscriptions:', () => {
     })
 
     describe('B publishes to A', () => {
-      after(() => {
-        nodeA.unsubscribe(nodeBId)
-      })
-
       it(`A receives a valid node head from B`, (done) => {
         const pubData = new Buffer('This is a publication')
 
-        nodeA.subscribe([nodeBId], (d) => {
-          const headHash = d.data.toString()
+        nodeA.subscribe([nodeBId], (msg) => {
+          console.log(msg)
+          const headHash = msg.data.toString()
+          nodeA.unsubscribe(nodeBId)
           ensureIpfsData(headHash, pubData, done)
         })
 
         nodeB.publish(pubData)
       })
+
+
+      it(`A walks back when falling behind B publishes`, (done) => {
+        console.log('\n\n\n--STARTING--\n\n')
+        console.log('nodeA', nodeAId)
+        console.log('nodeB', nodeBId)
+        console.log('-----------------------------------------------------------')
+        console.log('-----------------------------------------------------------\n\n')
+        // nodeA.unsubscribe(nodeBId)
+        console.log('nodeA subs:', nodeA.subscriptions.size)
+
+        const pubDataTwo = new Buffer('This is publication two')
+        const pubDataThree = new Buffer('This is publication three')
+        const pubDataFour = new Buffer('This is publication four')
+
+        nodeB.publish(pubDataTwo)
+        // nodeB.publish(pubDataThree)
+
+
+        let count = 0
+
+        setTimeout(() => {
+          // nodeA.subscribe([nodeBId], (msg) => {
+          //   const headHash = msg.data.toString()
+          //   console.log('FIRED THE SUBSCRIBE HANDLER WITH: ', headHash)
+          //   if (++count > 2) {
+          //     done()
+          //   }
+          //   // ensureIpfsData(headHash, pubData, done)
+          // })
+
+          nodeB.publish(pubDataThree)
+          nodeB.publish(pubDataFour)
+        }, 1000)
+
+      })
     })
   })
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

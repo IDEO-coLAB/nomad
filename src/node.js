@@ -6,6 +6,7 @@ const promisifyIPFS = require('./utils/promisify-ipfs')
 const log = require('./utils/log')
 const publish = require('./publish')
 const subscriptions = require('./subscriptions')
+const { State } = require('./local-state') // This module is a heavy WIP
 
 const MODULE_NAME = 'NODE'
 
@@ -32,14 +33,16 @@ module.exports = class Node {
    */
   constructor (config = DEFAULT_CONFIG) {
     this._ipfsConfig = config
-    this._ipfs = promisifyIPFS(new IPFS(this._ipfsConfig.repo))
+    this._ipfs = promisifyIPFS(new IPFS(config.repo))
 
-    this._publish = publish(this._ipfs)
-    this._subscribe = subscriptions.subscribe(this._ipfs)
-    this._unsubscribe = subscriptions.unsubscribe(this._ipfs)
+    this._publish = publish(this)
+    this._subscribe = subscriptions.subscribe(this)
+    this._unsubscribe = subscriptions.unsubscribe(this)
 
     this.identity = null
     this.subscriptions = new Map()
+    // TODO: figure out the naming and api here, this is an initial job for tests
+    this.heads = new State()
   }
 
   /**
