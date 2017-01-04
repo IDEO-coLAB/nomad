@@ -1,111 +1,130 @@
-const fs = require('fs')
-const R = require('ramda')
-
 const log = require('./utils/log')
-const config = require('./utils/config')
-const ipfsUtils = require('./utils/ipfs')
-const { setHead } = require('./node-cache')
+// const { getHeadForStream, setHeadForStream } = require('./local-state')
+
+/**
+ * TODO:
+ * - possibly: local-state should store entire DAG objects to avoid ipfs lookups
+ * - make broadcastAndStore 'atomic' even at a basic level
+ */
 
 const MODULE_NAME = 'PUBLISH'
 
-// Initialize a new sensor head object. This is a blank IPFS DAG object.
-//
-// @param {Anything} data
-//
-// @return {Promise} blank ipfs DAG object
-//
-const initLatestNodeHead = (data) => {
-  log.info(`${MODULE_NAME}: Initializing a new sensor head object`)
+module.exports = (self) => {
+  /**
+   * Create a new publishing head object with the appropriate 'data' link
+   *
+   * @param {Buffer} buf
+   * @returns {Promise} resolves with the newly added DAG object
+   */
+  const createHead = (buf) => {
+    return self._ipfs.files.add(buf)
+      .then((files) => {
+        return Promise.all([
+          self._ipfs.object.new(),
+          self._ipfs.object.get(files[0].hash, { enc: 'base58' })
+        ])
+      })
+      .then((results) => {
+        const emptyHeadDAG = results[0]
+        const dataDAG = results[1]
 
-  return Promise.all([ipfsUtils.object.create(), ipfsUtils.data.add(data)])
-    .then((results) => {
-      const emptyDAG = R.head(results) // target
-      const dataDAG = R.head(R.last(results)) // source
-      const linkName = 'data'
+        const link = dataDAG.toJSON()
+        link.name = 'data'
 
-      log.info(`${MODULE_NAME}: Adding data link to new sensor head`)
-      return ipfsUtils.object.link(dataDAG.node, emptyDAG, linkName)
-    })
-}
-
-// Link the previous sensor head to the new sensor head by creating the
-// appropriate links in the ipfs DAG object
-//
-// @param {Object} sourceDAG (ipfs DAG object)
-// @param {Object} targetDAG (ipfs DAG object)
-//
-// @return {Promise} source -> target linked ipfs DAG object
-//
-const linkLatestNodeHeadToPrev = (sourceDAG, targetDAG) => {
-  const linkName = 'prev'
-  log.info(`${MODULE_NAME}: Adding prev link to new sensor head`)
-  return ipfsUtils.object.link(sourceDAG, targetDAG, linkName)
-}
-
-// Publish the nodes latest head to the network
-//
-// @param {Object} dag (ipfs DAG object)
-// @param {Object} node (nomad node object)
-//
-// @return {Promise} nomad node object
-//
-const publishLatestNodeHead = (dag, node) => {
-  log.info(`${MODULE_NAME}: Publishing new sensor head (${dag.toJSON().Hash}) with links`, dag.toJSON().Links)
-  let newHead
-
-  return ipfsUtils.object.put(dag)
-    .then((headDAG) => {
-      newHead = headDAG
-      return ipfsUtils.name.publish(headDAG)
-    })
-    .then(() => {
-      // write the new head to cache
-      setHead(newHead)
-      // Once written to disk, set the new head on the node
-      node.head = newHead
-      // return the full node
-      return node
-    })
-}
-
-// Publish the node's first ever node head in the network
-// Note: this will not have a 'prev' link in the DAG object!
-//
-// @param {Anything} data
-// @param {Object} node (nomad node object)
-//
-// @return {Promise} ipfs DAG object
-//
-const publishNodeRoot = (data, node) => {
-  log.info(`${MODULE_NAME}: Publishing sensor root`)
-
-  return initLatestNodeHead(data)
-    .then(newDAG => publishLatestNodeHead(newDAG, node))
-    .catch(error => Promise.reject({ PUBLISH_ROOT_ERROR: error }))
-}
-
-// Publish the latest sensor data to the network
-//
-// @param {Anything} data
-// @param {Object} node (nomad node object)
-//
-// @return {Promise} ipfs DAG object
-//
-const publishNodeData = (data, node) => {
-  log.info(`${MODULE_NAME}: Publishing sensor data`)
-
-  if (!ipfsUtils.validDAGNode(node.head)) {
-    node.head = ipfsUtils.createDAGNode(node.head)
+        return self._ipfs.object.patch.addLink(emptyHeadDAG.multihash, link)
+      })
+      .then(self._ipfs.object.put)
   }
 
-  return initLatestNodeHead(data)
-    .then(newDAG => linkLatestNodeHeadToPrev(node.head, newDAG))
-    .then(newDAG => publishLatestNodeHead(newDAG, node))
+  /**
+   * Broadcast new data to subscribers; store the new head locally
+   * Note: this will eventually act as an 'atomic action'
+   *
+   * @param {Buffer|Object} data
+   * @param {String} id
+   * @returns {Promise} resolves with the newly published head's hash
+   */
+  const broadcastAndStore = (id, dag) => {
+    log.info(`${MODULE_NAME}: Broadcasting and storing ${dag.toJSON().multihash}`)
+
+    const mh = dag.toJSON().multihash
+    const mhBuf = new Buffer(mh)
+
+    return self._ipfs.pubsub.publish(id, mhBuf)
+      .then(() => {
+        console.log(id, 'PUBLISHING: ', mh)
+        return self.heads.setHeadForStream(id, mh)
+      })
+      // Note: catch might handle the idea of 'rollbacks' in an early 'atomic' version
+  }
+
+  /**
+   * Publish a new root for a specified id
+   * Warning: This entirely resets the published history
+   *
+   * @param {String} id
+   * @param {Buffer} buf
+   * @returns {Promise} resolves with the newly published head's hash
+   */
+  const publishRoot = (id, buf) => {
+    log.info(`${MODULE_NAME}: Publishing new root`)
+    return createHead(buf)
+      .then((dag) => broadcastAndStore(id, dag))
+  }
+
+  /**
+   * Publish new data for a specified id
+   * Warning: This entirely resets the published history
+   *
+   * @param {String} id
+   * @param {Buffer} buf
+   * @returns {Promise} resolves with the newly published head's hash
+   */
+  const publishData = (id, buf) => {
+    log.info(`${MODULE_NAME}: Publishing new data`)
+
+    const prevHash = self.heads.getHeadForStream(id)
+
+    return Promise.all([
+        createHead(buf),
+        self._ipfs.object.get(prevHash, { enc: 'base58' }) // avoid this lookup by storing whole DAG
+      ])
+      .then((results) => {
+        const newHeadDAG = results[0]
+        const link = results[1].toJSON()
+        link.name = 'prev'
+
+        console.log('prev', link)
+        console.log('prev hash', prevHash)
+        console.log('')
+
+        return self._ipfs.object.patch.addLink(newHeadDAG.multihash, link)
+      })
+      .then(self._ipfs.object.put)
+      .then((dag) => broadcastAndStore(id, dag))
+  }
+
+  /**
+   * API
+   *
+   * Publish data for a specified id
+   *
+   * @param {String} id
+   * @param {Buffer|Object} data
+   * @returns {Promise} resolves with the newly published head's hash
+   */
+  return (id, data) => {
+    let dataBuf = data
+    if (!Buffer.isBuffer(dataBuf)) {
+      dataBuf = new Buffer(dataBuf)
+    }
+
+    // TODO: ensure getHeadForStream is efficient in its lookups
+    // or store something locally once publish happens and refer here first
+    if (self.heads.getHeadForStream(id)) {
+      return publishData(id, dataBuf)
+    }
+    return publishRoot(id, dataBuf)
+  }
 }
 
-// API
-//
-module.exports = {
-  publish: publishNodeData,
-  publishRoot: publishNodeRoot,
-}
