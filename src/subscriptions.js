@@ -14,14 +14,6 @@ module.exports = exports
 
 let subscriptions = new Map()
 
-
-
-
-
-
-
-
-
 exports.subscribe = (self) => {
   /**
    * Handler function called each time a new message is received from the network
@@ -31,9 +23,6 @@ exports.subscribe = (self) => {
    * @returns {Function}
    */
   const receive = (id, handler) => {
-    console.log('')
-    console.log('')
-
     return (msg) => {
       // We use an array for delivery to avoid iterating by insertion order
       // which happens by default in ES6 Sets
@@ -56,7 +45,6 @@ exports.subscribe = (self) => {
        * @param {Object} hash
        */
       const deliverMessage = (hash) => {
-        console.log('this is the hash:', hash)
         self.heads.setHeadForStream(id, hash)
         handler({ from: id, data: hash })
       }
@@ -67,7 +55,6 @@ exports.subscribe = (self) => {
        */
       const deliverMessages = () => {
         deliveryQueue.forEach((msg) => deliverMessage(msg))
-        console.log('CLEARED THE QUEUE')
         resetDeliveryQueue()
       }
 
@@ -79,8 +66,6 @@ exports.subscribe = (self) => {
       const confirmHashOnNetwork = (hash) => {
         // Add hash to the deliveryQueue
         deliveryQueue.unshift(hash)
-        console.log('Adding to queue:', hash)
-        console.log('queue state:', deliveryQueue)
 
         return self._ipfs.object.get(hash, { enc: 'base58' })
           .then((DAG) => {
@@ -90,24 +75,14 @@ exports.subscribe = (self) => {
             const localPrev = self.heads.getHeadForStream(id)
 
             // - If there is no 'prev' link in this object, we reached a new root
-            if (R.isEmpty(prevArry)) {
-              return deliverMessages()
-            }
-
             // - If 'prev' link matches the cached head, we are up to date, and
             //   and can start devliering
-            if (networkPrev === localPrev) {
-              console.log('')
-              console.log('head', head)
-              console.log('network matched prev')
-              console.log('network', networkPrev)
-              console.log('prev', localPrev)
+            if (R.isEmpty(prevArry) || (networkPrev === localPrev)) {
               return deliverMessages()
             }
 
             // If 'prev' link doesn't match the cached head,
             // walk back and check the previous head
-            console.log('')
             return confirmHashOnNetwork(networkPrev)
           })
       }
@@ -119,8 +94,6 @@ exports.subscribe = (self) => {
       }
 
       // Otherwise ensure that the new head's 'prev' matches the network's version
-      console.log('LOCAL HEAD HERE - CONFIRMING ON NETWORK: ', newHead)
-      console.log('LOCAL HEAD IS: ', localHead)
       confirmHashOnNetwork(newHead)
     }
   }
