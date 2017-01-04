@@ -27,44 +27,30 @@ and any user code local state that needs to persist accross process failures. */
 // endBatch: marks the end of a series of operations that should be atomic
 // A batch should be persisted atomically. This may only be relevant in Node.js not browser
 
-//
-//
-// Gavin note: I tweaked this into a simple class because multiple nodes end
-// up writing to the same store--needed to change that for mult-node testing
-//
-//
-
-// const objectStore = {
-// 	streams: {}
-// }
-
-// const getHeadForStream = (streamHash) => {
-// 	return objectStore.streams[streamHash]
-// }
-
-// const setHeadForStream = (streamHash, objectHash) => {
-// 	objectStore.streams[streamHash] = objectHash
-// 	return objectHash
-// }
-
 class State {
   constructor () {
     this.store = { streams: {} }
   }
 
+  /**
+   * Get head DAG node for the stream
+   * @param {string} streamHash - the hash or peerid of the stream
+   * @return {Promise} Promise resolves to a DAG node object
+   */
   getHeadForStream (streamHash) {
-    return this.store.streams[streamHash]
+    return Promise.resolve(this.store.streams[streamHash])
   }
 
-  setHeadForStream (streamHash, objectHash) {
-   this.store.streams[streamHash] = objectHash
-   return objectHash
+  /**
+   * Set head DAG node for the stream
+   * @param {string} streamHash - the hash or peerid of the stream
+   * @param {string} object - the DAG object to be stored
+   * @return {Promise} Promise resolves to a DAG node object
+   */
+  setHeadForStream (streamHash, object) {
+   this.store.streams[streamHash] = object
+   return Promise.resolve(object)
   }
 }
 
-module.exports = {
-  State,
-	// getHeadForStream,
-	// setHeadForStream
-	// clearHeadForStream
-}
+module.exports = State
