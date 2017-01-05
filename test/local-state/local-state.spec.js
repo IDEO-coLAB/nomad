@@ -1,9 +1,18 @@
 const LocalState = require('../../src/local-state')
 const expect = require('chai').expect
 const assert = require('chai').assert
+const path = require('path')
+const os = require('os')
+
+const ostemp = os.tmpdir()
+const dbPath = path.resolve(
+  ostemp, 
+  `.nomad-state-db-${Math.random().toString().substring(2, 8)}`)
+
+console.log(dbPath)
 
 describe('local state:', () => {
-  const state = new LocalState()
+  const state = new LocalState({ filePath: dbPath })
   const stream1 = 'foo'
   const obj1 = { fookey: 'foovalue' }
 
@@ -12,10 +21,9 @@ describe('local state:', () => {
 
   const stream3 = 'baz'
 
-  console.log(state)
-
   it('sets a stream head', () => {
     return state.setHeadForStream(stream1, obj1).then((obj) => {
+      // console.log(obj)
       expect(obj).to.deep.equal(obj1)
       expect(obj).to.not.deep.equal(obj2)
     })
@@ -42,10 +50,10 @@ describe('local state:', () => {
     })
   })
 
-  it('gets undefined when getting a head never set', () => {
+  it('gets null when getting a head never set', () => {
     return state.getHeadForStream(stream3)
       .then((obj) => {
-        expect(obj).to.equal(undefined)
+        expect(obj).to.equal(null)
     })
   })
 })

@@ -1,22 +1,10 @@
-// HEAVY WIP
+/** 
+  * Tracks heads of subscriptions that a node is subscribed to and / or
+  * a node's own published messages.
+  */
 
-/* Local state operations include tracking which nodes a node is subscribed
-to, which messages (for each subscription) have been delivered to user code,
-and any user code local state that needs to persist accross process failures. */
-
-
-// SUBSCRIPTIONS
-
-// get existing subscriptions
-// remove subscription from cache
-// get head hash for existing subscription
-// set head hash for existing subscription
-// clear head hash for existing subscription
-
-// PUBLISHING
-
-
-
+const Datastore = require('nedb')
+  
 // LOCAL STATE
 // For a later rev?
 // get arbitrary data
@@ -28,8 +16,10 @@ and any user code local state that needs to persist accross process failures. */
 // A batch should be persisted atomically. This may only be relevant in Node.js not browser
 
 class State {
-  constructor () {
-    this.store = { streams: {} }
+  constructor (config) {
+      this.db = new Datastore({ filename: config.filePath, autoload: true })
+      // Nedb will automatically persist to browser local storage
+      // if filename is set and running in browser
   }
 
   /**
@@ -38,7 +28,19 @@ class State {
    * @return {Promise} Promise resolves to a DAG node object
    */
   getHeadForStream (streamHash) {
-    return Promise.resolve(this.store.streams[streamHash])
+    return new Promise((resolve, reject) => {
+      this.db.findOne({ streamHash: streamHash }, (err, object) => {
+        if (err) {
+          reject(err)
+          return
+        }
+        if (object === null) {
+          resolve(null)
+          return
+        }
+        resolve(object.object)
+      })
+    })
   }
 
   /**
@@ -48,8 +50,16 @@ class State {
    * @return {Promise} Promise resolves to a DAG node object
    */
   setHeadForStream (streamHash, object) {
-   this.store.streams[streamHash] = object
-   return Promise.resolve(object)
+    return new Promise((resolve, reject) => {
+      this.db.insert({ streamHash, object }, 
+        (err, newObj) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(newObj.object)
+      })
+    })
   }
 }
 
