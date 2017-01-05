@@ -98,7 +98,12 @@ exports.subscribe = (self) => {
     }
   }
 
-
+  /**
+   * Subscribe API
+   *
+   * @param {String} id
+   * @param {Object} handler
+   */
   return (id, handler) => {
     const ipfsHandler = receive(id, handler)
     subscriptions.set(id, ipfsHandler)

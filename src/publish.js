@@ -53,6 +53,7 @@ module.exports = (self) => {
     return self._ipfs.pubsub.publish(id, mhBuf)
       .then(() => {
         console.log(id, 'PUBLISHING: ', mh)
+        console.log('======================================================\n\n\n')
         return self.heads.setHeadForStream(id, mh)
       })
       // Note: catch might handle the idea of 'rollbacks' in an early 'atomic' version
@@ -96,7 +97,6 @@ module.exports = (self) => {
 
         console.log('prev', link)
         console.log('prev hash', prevHash)
-        console.log('')
 
         return self._ipfs.object.patch.addLink(newHeadDAG.multihash, link)
       })

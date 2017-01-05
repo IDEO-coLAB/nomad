@@ -177,14 +177,14 @@ describe.only('subscriptions:', () => {
         let count = 0
 
         setTimeout(() => {
-          // nodeA.subscribe([nodeBId], (msg) => {
-          //   const headHash = msg.data.toString()
-          //   console.log('FIRED THE SUBSCRIBE HANDLER WITH: ', headHash)
-          //   if (++count > 2) {
-          //     done()
-          //   }
-          //   // ensureIpfsData(headHash, pubData, done)
-          // })
+          nodeA.subscribe([nodeBId], (msg) => {
+            const headHash = msg.data.toString()
+            console.log('FIRED THE SUBSCRIBE HANDLER WITH: ', headHash)
+            if (++count > 2) {
+              done()
+            }
+            // ensureIpfsData(headHash, pubData, done)
+          })
 
           nodeB.publish(pubDataThree)
           nodeB.publish(pubDataFour)

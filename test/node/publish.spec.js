@@ -3,7 +3,7 @@ const promisify = require('es6-promisify')
 
 const ipfsFactory = require('./../utils/temp-ipfs')
 const nodeFactory = require('./../utils/temp-node')
-const localState = require('../../src/local-state')
+// const localState = require('../../src/local-state')
 
 const HASH_ENCODING = { enc: 'base58' }
 
@@ -77,7 +77,7 @@ describe('publish:', () => {
 
     describe('root:', () => {
       it('no head stored locally before root is published', () => {
-        expect(localState.getHeadForStream(nodeAId)).to.eql(undefined)
+        expect(nodeA.heads.getHeadForStream(nodeAId)).to.eql(undefined)
       })
 
       it('root is published and the head is stored locally', () => {
@@ -85,7 +85,7 @@ describe('publish:', () => {
           .then((rootHash) => {
             stored = rootHash
             expect(rootHash).to.exist
-            expect(localState.getHeadForStream(nodeAId)).to.eql(rootHash)
+            expect(nodeA.heads.getHeadForStream(nodeAId)).to.eql(rootHash)
             return ensureIpfsData(stored, dataRoot)
           })
 
@@ -94,7 +94,7 @@ describe('publish:', () => {
 
     describe('non-root:', () => {
       it('a head is found locally once a publish has occurred', () => {
-        expect(localState.getHeadForStream(nodeAId)).to.eql(stored)
+        expect(nodeA.heads.getHeadForStream(nodeAId)).to.eql(stored)
       })
 
       it('subsequent publishes work and the head hash is stored locally', () => {
@@ -102,7 +102,7 @@ describe('publish:', () => {
           .then((hashB) => {
             stored = hashB
             expect(hashB).to.exist
-            expect(localState.getHeadForStream(nodeAId)).to.eql(hashB)
+            expect(nodeA.heads.getHeadForStream(nodeAId)).to.eql(hashB)
             return ensureIpfsData(stored, dataB)
           })
           .then(() => {
@@ -111,7 +111,7 @@ describe('publish:', () => {
           .then((hashC) => {
             stored = hashC
             expect(hashC).to.exist
-            expect(localState.getHeadForStream(nodeAId)).to.eql(hashC)
+            expect(nodeA.heads.getHeadForStream(nodeAId)).to.eql(hashC)
             return ensureIpfsData(stored, dataC)
           })
       })

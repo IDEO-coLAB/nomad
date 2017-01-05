@@ -1,6 +1,9 @@
 const R = require('ramda')
 const path = require('path')
 const IPFS = require('ipfs')
+// const Queue = require('turnstile')
+// const promisify = require("es6-promisify")
+const PQueue = require('p-queue')
 
 const promisifyIPFS = require('./utils/promisify-ipfs')
 const log = require('./utils/log')
@@ -9,6 +12,8 @@ const subscriptions = require('./subscriptions')
 const { State } = require('./local-state') // This module is a heavy WIP
 
 const MODULE_NAME = 'NODE'
+
+const queue = new PQueue({concurrency: 1})
 
 /**
  * TODO:
@@ -94,7 +99,13 @@ module.exports = class Node {
     if (R.isNil(data)) {
       throw new Error('Publish requires a data argument')
     }
-    return this._publish(this.identity.id, data)
+    // return this._publish(this.identity.id, data)
+    return new Promise((resolve, reject) => {
+      queue.add(() => this._publish(this.identity.id, data)
+          .then(resolve)
+          .catch(reject)
+      )
+    })
   }
 
   /**
