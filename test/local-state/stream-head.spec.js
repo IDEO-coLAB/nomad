@@ -2,13 +2,13 @@ const expect = require('chai').expect
 const assert = require('chai').assert
 const path = require('path')
 
-const LocalState = require('../../src/local-state')
+const StreamHead = require('../../src/local-state').StreamHead
 const createTempLocalState = require('../utils/temp-local-state')
 
 const dbPath = createTempLocalState()
 
 describe('local state:', () => {
-  const state = new LocalState({ filePath: dbPath })
+  const state = new StreamHead({ filePath: dbPath })
   const stream1 = 'foo'
   const obj1 = { fookey: 'foovalue' }
   const objUpdate1 = { fookey: 'foovalueNew' }

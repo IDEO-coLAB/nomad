@@ -1,0 +1,53 @@
+
+
+
+NETWORK MESSAGE WAREHOUSE
+- network incoming message handler puts message into two data structures
+	- new messages set
+	- cached messages map
+
+
+MESSAGE ORDERING AND DELIVERY
+- fetch message from incoming network bin
+- has message already been delivered to user callback? (use bloom filter)
+	- if yes, we're done. If bloom filter is wrong, then this message won't get delivered but a future message will force it's deliver.
+	- if no, 
+		- put message into stack
+		- get message's prev and fetch from cached message map
+		- iterate until an iteration limit is reached or until prev == head
+		- deliver messages to callback in order
+		- update messages delivered bloom filter
+		- update stream head to most recent delivered message
+
+
+
+
+
+
+code has message walkback iteration limit.
+what happens if (somehow) message from a year ago shows up. It's not in bloom filter because of limited size. Bloom filter only keeps most recent million messages.
+Walk back will 
+
+
+
+
+
+
+WHAT IF MESSAGES ARE ORDERED?
+
+NETWORK MESSAGE WAREHOUSE
+- network incoming message handler puts message into two data structures
+	- new messages set
+	- cached messages map
+
+MESSAGE ORDERING AND DELIVERY
+- fetch message from incoming network bin
+- is message id > head id?
+- If no, message has already been delivered
+- if yes
+	- put message into stack
+	- get message's prev and fetch from cached message map
+	- iterate until an iteration limit is reached or until prev == head
+	- deliver messages to callback in order
+	- update stream head to most recent delivered message
+	- 
