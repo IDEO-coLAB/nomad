@@ -7,7 +7,7 @@ const createTempLocalState = require('../utils/temp-local-state')
 
 const dbPath = createTempLocalState()
 
-describe('local state:', () => {
+describe('stream-head:', () => {
   const state = new StreamHead({ filePath: dbPath })
   const stream1 = 'foo'
   const obj1 = { fookey: 'foovalue' }

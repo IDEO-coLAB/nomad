@@ -15,7 +15,7 @@
   	return this.map[hash]
   }
 
-  clearMessage(hash) {
+  deleteMessage(hash) {
   	delete this.map[hash]
   }
 
@@ -23,5 +23,7 @@
   	this.map[hash] = message
   }
 }
+
+module.exports = MessageCache
 
 
