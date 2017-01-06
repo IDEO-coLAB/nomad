@@ -1,15 +1,13 @@
 const R = require('ramda')
 const path = require('path')
 const IPFS = require('ipfs')
-// const Queue = require('turnstile')
-// const promisify = require("es6-promisify")
 const PQueue = require('p-queue')
 
 const promisifyIPFS = require('./utils/promisify-ipfs')
 const log = require('./utils/log')
 const publish = require('./publish')
 const subscriptions = require('./subscriptions')
-const { State } = require('./local-state') // This module is a heavy WIP
+const State = require('./local-state')
 
 const MODULE_NAME = 'NODE'
 
@@ -22,7 +20,8 @@ const queue = new PQueue({concurrency: 1})
  */
 
 const DEFAULT_CONFIG = {
-  repo: `${path.resolve(__dirname)}/TESTER-ipfs-nomad-repo`,
+  db: `${path.resolve(__dirname)}/.nomad-store`,
+  repo: `${path.resolve(__dirname)}/.ipfs-store`,
   ipfs: { emptyRepo: true, bits: 2048 }
 }
 
@@ -47,7 +46,7 @@ module.exports = class Node {
     this.identity = null
     this.subscriptions = new Map()
     // TODO: figure out the naming and api here, this is an initial job for tests
-    this.heads = new State()
+    this.heads = new State({ filePath: config.db })
   }
 
   /**

@@ -5,11 +5,13 @@ const leftPad = require('left-pad')
 
 const cmd = require('./cmd-runner')
 const createTempRepo = require('./temp-repo')
+const createTempLocalState = require('./temp-local-state')
 
 module.exports = {
   create: (num) => {
     const factoryConfig = {
       repo: createTempRepo(),
+      db: createTempLocalState(),
       ipfs: { emptyRepo: true, bits: 2048 }
     }
 

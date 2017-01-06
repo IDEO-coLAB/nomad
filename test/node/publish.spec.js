@@ -11,10 +11,6 @@ describe('publish:', () => {
   let nodeAId
   let ipfs
 
-  const dataRoot = new Buffer('Some publishing data')
-  const dataB = new Buffer('Some more publishing data')
-  const dataC = new Buffer('Yet another publish')
-
   const ensureIpfsData = (hash, targetData) => {
     return ipfs.object.get(hash, HASH_ENCODING)
       .then((headDAG) => {
@@ -56,7 +52,7 @@ describe('publish:', () => {
       .then(() => {
         // Note: Connection timing is an issue so we need to wait
         // for the connections to open
-        return new Promise((resolve) => setTimeout(resolve, 2000))
+        return new Promise((resolve) => setTimeout(resolve, 1200))
       })
   })
 
@@ -71,49 +67,87 @@ describe('publish:', () => {
     expect(throwerB).to.throw
   })
 
-  describe('no local state:', () => {
-    let stored = null
-
-    describe('root:', () => {
-      it('no head stored locally before root is published', () => {
-        expect(nodeA.heads.getHeadForStream(nodeAId)).to.eql(undefined)
+  it('node root does not exist before first publish', () => {
+    return nodeA.heads.getHeadForStream(nodeAId)
+      .then((headDAG) => {
+        expect(headDAG).to.eql(null)
       })
+  })
 
-      it('root is published and the head is stored locally', () => {
-        return nodeA.publish(dataRoot)
-          .then((rootHash) => {
-            stored = rootHash
-            expect(rootHash).to.exist
-            expect(nodeA.heads.getHeadForStream(nodeAId)).to.eql(rootHash)
-            return ensureIpfsData(stored, dataRoot)
-          })
+  it('root is stored after first publish', () => {
+    let rootHash
+    let storedHash
 
+    const data = new Buffer('Some publishing data')
+
+    return nodeA.publish(data)
+      .then((rootDAG) => {
+        expect(rootDAG).to.exist
+        rootHash = rootDAG.multihash
+        return nodeA.heads.getHeadForStream(nodeAId)
       })
-    })
-
-    describe('non-root:', () => {
-      it('a head is found locally once a publish has occurred', () => {
-        expect(nodeA.heads.getHeadForStream(nodeAId)).to.eql(stored)
+      .then((storedDAG) => {
+        expect(storedDAG).to.exist
+        storedHash = storedDAG.multihash
+        expect(storedHash).to.eql(rootHash)
+        return ensureIpfsData(storedHash, data)
       })
+  })
 
-      it('subsequent publishes work and the head hash is stored locally', () => {
-        return nodeA.publish(dataB)
-          .then((hashB) => {
-            stored = hashB
-            expect(hashB).to.exist
-            expect(nodeA.heads.getHeadForStream(nodeAId)).to.eql(hashB)
-            return ensureIpfsData(stored, dataB)
-          })
-          .then(() => {
-            return nodeA.publish(dataC)
-          })
-          .then((hashC) => {
-            stored = hashC
-            expect(hashC).to.exist
-            expect(nodeA.heads.getHeadForStream(nodeAId)).to.eql(hashC)
-            return ensureIpfsData(stored, dataC)
-          })
+  it('staggered publishes', () => {
+    let storedHash
+
+    const dataA = new Buffer('Some more publishing data')
+    const dataB = new Buffer('Yet another publish')
+
+    return nodeA.publish(dataA)
+      .then((pubDAG) => {
+        expect(pubDAG).to.exist
+        storedHash = pubDAG.multihash
+        return nodeA.heads.getHeadForStream(nodeAId)
       })
-    })
+      .then((storedDAG) => {
+        const fetchedHash = storedDAG.multihash
+        expect(fetchedHash).to.eql(storedHash)
+        return ensureIpfsData(fetchedHash, dataA)
+      })
+      .then(() => nodeA.publish(dataB))
+      .then((pubDAG) => {
+        expect(pubDAG).to.exist
+        storedHash = pubDAG.multihash
+        return nodeA.heads.getHeadForStream(nodeAId)
+      })
+      .then((storedDAG) => {
+        const fetchedHash = storedDAG.multihash
+        expect(fetchedHash).to.eql(storedHash)
+        return ensureIpfsData(fetchedHash, dataB)
+      })
+  })
+
+  it('rapid fire publishes', () => {
+    let storedHash
+
+    const dataA = new Buffer('Some more publishing data')
+    const dataB = new Buffer('Yet another publish')
+    const dataC = new Buffer('Yet another publish event')
+    const dataD = new Buffer('Still another publish')
+    const dataE = new Buffer('Yet another publish')
+
+    nodeA.publish(dataA)
+    nodeA.publish(dataB)
+    nodeA.publish(dataC)
+    nodeA.publish(dataD)
+
+    return nodeA.publish(dataE)
+      .then((pubDAG) => {
+        expect(pubDAG).to.exist
+        storedHash = pubDAG.multihash
+        return nodeA.heads.getHeadForStream(nodeAId)
+      })
+      .then((storedDAG) => {
+        const fetchedHash = storedDAG.multihash
+        expect(fetchedHash).to.eql(storedHash)
+        return ensureIpfsData(fetchedHash, dataE)
+      })
   })
 })

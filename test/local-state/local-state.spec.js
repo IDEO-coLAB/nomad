@@ -1,20 +1,17 @@
-const LocalState = require('../../src/local-state')
 const expect = require('chai').expect
 const assert = require('chai').assert
 const path = require('path')
-const os = require('os')
 
-const ostemp = os.tmpdir()
-const dbPath = path.resolve(
-  ostemp, 
-  `.nomad-state-db-${Math.random().toString().substring(2, 8)}`)
+const LocalState = require('../../src/local-state')
+const createTempLocalState = require('../utils/temp-local-state')
 
-console.log(dbPath)
+const dbPath = createTempLocalState()
 
 describe('local state:', () => {
   const state = new LocalState({ filePath: dbPath })
   const stream1 = 'foo'
   const obj1 = { fookey: 'foovalue' }
+  const objUpdate1 = { fookey2: 'foovalueNew' }
 
   const stream2 = 'bar'
   const obj2 = { barkey: 'barvalue'}
@@ -23,7 +20,6 @@ describe('local state:', () => {
 
   it('sets a stream head', () => {
     return state.setHeadForStream(stream1, obj1).then((obj) => {
-      // console.log(obj)
       expect(obj).to.deep.equal(obj1)
       expect(obj).to.not.deep.equal(obj2)
     })
@@ -54,6 +50,14 @@ describe('local state:', () => {
     return state.getHeadForStream(stream3)
       .then((obj) => {
         expect(obj).to.equal(null)
+    })
+  })
+
+  it('updates a stream head', () => {
+    return state.setHeadForStream(stream1, objUpdate1)
+    .then(() => state.getHeadForStream(stream1))
+    .then((obj) => {
+      expect(obj).to.eql(objUpdate1)
     })
   })
 })

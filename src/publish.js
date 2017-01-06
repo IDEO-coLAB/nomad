@@ -1,5 +1,4 @@
 const log = require('./utils/log')
-// const { getHeadForStream, setHeadForStream } = require('./local-state')
 
 /**
  * TODO:
@@ -47,12 +46,12 @@ module.exports = (self) => {
   const broadcastAndStore = (id, dag) => {
     log.info(`${MODULE_NAME}: Broadcasting and storing ${dag.toJSON().multihash}`)
 
-    const mh = dag.toJSON().multihash
-    const mhBuf = new Buffer(mh)
+    const dagJSON = dag.toJSON()
+    const mhBuf = new Buffer(dagJSON.multihash)
 
     return self._ipfs.pubsub.publish(id, mhBuf)
       .then(() => {
-        return self.heads.setHeadForStream(id, mh)
+        return self.heads.setHeadForStream(id, dagJSON)
       })
       // Note: catch might handle the idea of 'rollbacks' in an early 'atomic' version
   }
@@ -82,12 +81,16 @@ module.exports = (self) => {
   const publishData = (id, buf) => {
     log.info(`${MODULE_NAME}: Publishing new data`)
 
-    const prevHash = self.heads.getHeadForStream(id)
+    return self.heads.getHeadForStream(id)
+      .then((prevDAG) => {
+        const prevHash = prevDAG.multihash
 
-    return Promise.all([
-        createHead(buf),
-        self._ipfs.object.get(prevHash, { enc: 'base58' }) // avoid this lookup by storing whole DAG
-      ])
+        return Promise.all([
+          createHead(buf),
+          self._ipfs.object.get(prevHash, { enc: 'base58' }) // avoid this lookup by storing whole DAG
+        ])
+      })
+
       .then((results) => {
         const newHeadDAG = results[0]
         const link = results[1].toJSON()
@@ -114,12 +117,15 @@ module.exports = (self) => {
       dataBuf = new Buffer(dataBuf)
     }
 
-    // TODO: ensure getHeadForStream is efficient in its lookups
-    // or store something locally once publish happens and refer here first
-    if (self.heads.getHeadForStream(id)) {
-      return publishData(id, dataBuf)
-    }
-    return publishRoot(id, dataBuf)
+    return self.heads.getHeadForStream(id)
+      .then((cachedId) => {
+        if (cachedId) {
+          return publishData(id, dataBuf)
+        }
+        return publishRoot(id, dataBuf)
+      })
+      // TODO: Error handling here?
+
   }
 }
 

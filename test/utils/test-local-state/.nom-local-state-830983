@@ -1,0 +1,3 @@
+{"streamHash":"foo","object":{"fookey":"foovalue"},"_id":"Xkd1BDf9HthAYt1R"}
+{"streamHash":"bar","object":{"barkey":"barvalue"},"_id":"1Y9He82KRL1CPTUc"}
+{"streamHash":"foo","object":{"fookey2":"foovalueNew"},"_id":"Xkd1BDf9HthAYt1R"}

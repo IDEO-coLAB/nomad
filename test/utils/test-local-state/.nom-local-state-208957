@@ -1,0 +1,3 @@
+{"streamHash":"foo","object":null,"_id":"UzSQkttzfqlQGrMy"}
+{"streamHash":"bar","object":null,"_id":"soZ3ngpvXzZat0fF"}
+{"streamHash":"foo","object":{"streamHash":"foo","object":null,"_id":"UzSQkttzfqlQGrMy"},"_id":"UzSQkttzfqlQGrMy"}
