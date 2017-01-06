@@ -107,6 +107,10 @@ describe.only('subscriptions:', () => {
         expect(throwerA).to.throw
       })
 
+      // TODO: Decide on this API - this is currently a 'get it working first' case
+      // Behavior is currently this:
+      // nodeA.subscribe(nodeB, handler1)
+      // nodeA.subscribe(nodeB, handler2) => handler2 will not be registered currently...will change
       describe('multiple subscribe calls to same hash:', () => {
         const handlerB = () => {}
         const handlerC = () => {}
@@ -142,8 +146,14 @@ describe.only('subscriptions:', () => {
     })
 
     describe('multiple nodes (A => B):', () => {
+      const pubRoot = new Buffer('A root is now published')
+      const pubDataA = new Buffer('This is publication a')
+      const pubDataB = new Buffer('This is publication b')
+      const pubDataC = new Buffer('This is publication c')
+      const pubDataD = new Buffer('This is publication d')
+
       before(() => {
-        return nodeB.publish(new Buffer('A root is now published'))
+        return nodeB.publish(pubRoot)
       })
 
       it('A subscription list contains B', () => {
@@ -158,48 +168,38 @@ describe.only('subscriptions:', () => {
       })
 
       it(`B publish a single message => A receives`, (done) => {
-        console.log('\n\n\n--------------------------------------------\n\n')
-        const pubData = new Buffer('This is a publication')
-        let count = 0
+        const someData = new Buffer('This is a publication')
+
         nodeA.subscribe([nodeBId], (msg) => {
           const headHash = msg.data.toString()
-          console.log('THE HANDLER IS CALLED:', ++count, headHash)
           nodeA.unsubscribe(nodeBId)
-          ensureIpfsData(headHash, pubData, done)
+          ensureIpfsData(headHash, someData, done)
         })
 
-        nodeB.publish(pubData)
+        nodeB.publish(someData)
       })
 
-      xit(`B publishes rapid fire => A receives all`, (done) => {
+      it(`B publishes rapid fire => A receives all`, (done) => {
+        console.log('------------------------------------------------\n\n\n\n')
         let receiveCount = 0
 
-        const pubDataA = new Buffer('This is publication a')
-        const pubDataB = new Buffer('This is publication b')
-        const pubDataC = new Buffer('This is publication c')
-        const pubDataD = new Buffer('This is publication d')
+        nodeA.subscribe([nodeBId], (msg) => {
+          const headHash = msg.data.toString()
+          if (++receiveCount > 3) {
+            console.log('receiveCoun', receiveCount)
+            nodeA.unsubscribe(nodeBId)
+            ensureIpfsData(headHash, pubDataD, done)
+          }
+        })
 
         nodeB.publish(pubDataA)
         nodeB.publish(pubDataB)
         nodeB.publish(pubDataC)
         nodeB.publish(pubDataD)
-
-        nodeA.subscribe([nodeBId], (msg) => {
-          const headHash = msg.data.toString()
-          if (++receiveCount > 3) {
-            nodeA.unsubscribe(nodeBId)
-            ensureIpfsData(headHash, pubDataD, done)
-          }
-        })
       })
 
       xit(`A misses messages from B => missed messages are found and delivered`, (done) => {
         let receiveCount = 0
-
-        const pubDataA = new Buffer('This is publication a')
-        const pubDataB = new Buffer('This is publication b')
-        const pubDataC = new Buffer('This is publication c')
-        const pubDataD = new Buffer('This is publication d')
 
         // Miss two publishes
         nodeB.publish(pubDataA)

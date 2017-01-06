@@ -42,15 +42,15 @@ exports.subscribe = (self) => {
 
       log.info(`${MODULE_NAME}: ${id} published ${newHeadHash}`)
 
-      // The local state's current knowledge of the node's head
-      let cachedHead
+      // // The local state's current knowledge of the node's head
+      // let cachedHead
 
-      // We use an array for delivery to avoid iterating by insertion order
-      // which happens by default in ES6 Sets
+      // We might have to walk back to deliver missed messages
+      // this queue is how we track messages to deliver in-order
       let deliveryQueue = new Array()
 
       /**
-       * Execute a pre-defined function to deliver a formatted message
+       * Call the user's callback with a formatted message and update the head
        *
        * @param {Object} DAGNode
        */
@@ -70,7 +70,7 @@ exports.subscribe = (self) => {
       }
 
       /**
-       * Deliver messages from the queue, then reset the queue
+       * Deliver anything in the delivery queue that has not been delivered
        *
        */
       const deliverMessages = () => {
@@ -93,7 +93,7 @@ exports.subscribe = (self) => {
        *
        * @param {String} hash
        */
-      const confirmHashOnNetwork = (hash) => {
+      const deliverMessagesUpToIncluding = (hash) => {
         // If the hash has been delivered already, no more network lookups
         // are necessary - drain the queue
         if (deliveredMessages.exists(hash)) {
@@ -101,6 +101,12 @@ exports.subscribe = (self) => {
         }
 
         let networkHead
+
+        // return Promise.all([
+        //   self.heads.getHeadForStream(id),
+        // ])
+
+
 
         self._ipfs.object.get(hash, { enc: 'base58' })
           .then((DAG) => {
@@ -130,21 +136,22 @@ exports.subscribe = (self) => {
 
             // If the network's 'prev' link doesn't match the cached version,
             // walk back to the previous node and recursively check it
-            confirmHashOnNetwork(networkPrevHash)
-          })
-          .catch((err) => {
-            // TODO: how do we want to propagate errors
-            console.log('confirmHashOnNetwork error:', err)
+            deliverMessagesUpToIncluding(networkPrevHash)
           })
       }
 
+
+
+
+
+
       self.heads.getHeadForStream(id)
-        .then((headDAG) => {
-          if (headDAG) {
-            console.log('HAS A HEAD DAG', headDAG)
-            cachedHead = headDAG
+        .then((currentDAG) => {
+          if (currentDAG) {
+            return deliverMessagesUpToIncluding(currentDAG.multihash)
           }
-          confirmHashOnNetwork(newHeadHash)
+          addToQueue(networkHead)
+          return deliverMessages()
         })
         .catch((err) => {
           // TODO: how do we want to propagate errors
@@ -152,6 +159,17 @@ exports.subscribe = (self) => {
         })
     }
   }
+
+
+
+
+
+
+
+
+
+
+
 
   return (id, handler) => {
     const ipfsHandler = receive(id, handler)
