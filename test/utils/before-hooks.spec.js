@@ -5,5 +5,8 @@
 const cmd = require('./../utils/cmd-runner')
 
 before(() => {
-  cmd.cleanRepo()
+  return Promise.all([
+    cmd.cleanRepo(),
+    cmd.cleanLocalState()
+  ])
 })

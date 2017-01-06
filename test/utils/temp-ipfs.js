@@ -19,6 +19,17 @@ module.exports = {
 
     const ipfs = new IPFS(factoryConfig.repo)
 
+    ipfs.start = () => {
+      return new Promise((resolve, reject) => {
+        ipfs.goOnline((err) => {
+          if (err) {
+            throw err
+          }
+          return resolve(ipfs)
+        })
+      })
+    }
+
     ipfs.teardown = () => {
       return new Promise((resolve, reject) => {
         ipfs.goOffline((err) => {
@@ -28,17 +39,11 @@ module.exports = {
           return resolve()
         })
       })
-      .then(() => cmd.cleanRepo(factoryConfig.repo.path))
-    }
-
-    ipfs.start = () => {
-      return new Promise((resolve, reject) => {
-        ipfs.goOnline((err) => {
-          if (err) {
-            throw err
-          }
-          return resolve(ipfs)
-        })
+      .then(() => {
+        return Promise.all([
+          cmd.cleanRepo(factoryConfig.repo.path),
+          cmd.cleanLocalState(factoryConfig.repo.db)
+        ])
       })
     }
 

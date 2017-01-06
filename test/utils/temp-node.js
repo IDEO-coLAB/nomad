@@ -10,7 +10,7 @@ const Node = require('../../src/node')
 
 module.exports = {
   create: (num) => {
-    const config = {
+    const factoryConfig = {
       repo: createTempRepo(),
       db: createTempLocalState(),
       ipfs: { emptyRepo: true, bits: 2048 }
@@ -18,7 +18,7 @@ module.exports = {
 
     const offset = leftPad(num, 3, 0)
 
-    let node = new Node(config)
+    let node = new Node(factoryConfig)
 
     // This fn offsets the default ports => needed when running multiple nodes
     // at once. As a result, we use this commanf to start the test nodes and we
@@ -66,7 +66,12 @@ module.exports = {
 
     node.teardown = () => {
       return node.stop()
-        .then(() => cmd.cleanRepo(config.repo.path))
+        .then(() => {
+          return Promise.all([
+            cmd.cleanRepo(factoryConfig.repo.path),
+            cmd.cleanLocalState(factoryConfig.repo.db)
+          ])
+        })
     }
 
     return Promise.resolve(node)

@@ -6,6 +6,7 @@ const log = require('./../../src/utils/log')
 const MODULE_NAME = 'CMD-RUNNER'
 
 const ALL_REPOS_PATH = `${path.resolve(__dirname, 'test-repos')}`
+const ALL_LOCAL_STATE_PATH = `${path.resolve(__dirname, 'test-local-state')}`
 
 function execAndLog(command, options) {
   log.test(`${MODULE_NAME}: ${command}`)
@@ -33,4 +34,17 @@ function cleanRepo(repoPath) {
   }
 }
 
-module.exports = { cleanRepo }
+function cleanLocalState(localStatePath) {
+  switch (typeof localStatePath) {
+    case 'string':
+      return execAndLog(`rm -rf ${localStatePath}`)
+      break
+    case 'undefined':
+      return execAndLog(`rm -rf ${ALL_LOCAL_STATE_PATH}`)
+      break
+    default:
+      throw new Error(`Failed to recognize 'cleanRepo' argument: ${localStatePath}`)
+  }
+}
+
+module.exports = { cleanRepo, cleanLocalState }

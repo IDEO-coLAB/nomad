@@ -6,7 +6,7 @@ const nodeFactory = require('./../utils/temp-node')
 
 const HASH_ENCODING = { enc: 'base58' }
 
-describe('publish:', () => {
+describe.only('publish:', () => {
   let nodeA
   let nodeAId
   let ipfs
