@@ -5,6 +5,7 @@ const log = require('./utils/log')
 
 /**
  * TODO:
+ * - Error handling on subscribe receive fails...
  * - Start defining the receive protocols and formatting at this layer
  * - Move subscriptions into the state / cache layer
  * - Move the delivered messages bloom filter into the state / cache layer
@@ -38,26 +39,34 @@ exports.subscribe = (self) => {
     log.info(`${MODULE_NAME}: Received new data`)
 
     return (msg) => {
+      // The local state's current knowledge of the node's head
+      let cachedHead
+
       // We use an array for delivery to avoid iterating by insertion order
       // which happens by default in ES6 Sets
       let deliveryQueue = new Array()
 
-      // The locally cached head
-      const localHead = self.heads.getHeadForStream(id)
       // The new head incoming from the network
       const newHead = msg.data.toString()
 
       /**
        * Execute a pre-defined function to deliver a formatted message
        *
-       * @param {String} hash
+       * @param {Object} DAGNode
        */
-      const deliverMessage = (hash) => {
+      const deliverMessage = (DAGNode) => {
+        const hash = DAGNode.multihash
         log.info(`${MODULE_NAME}: Delivering ${hash}`)
 
-        self.heads.setHeadForStream(id, hash)
-        deliveredMessages.add(hash)
-        handler({ from: id, data: hash })
+        self.heads.setHeadForStream(id, DAGNode)
+          .then((newCachedHead) => {
+            deliveredMessages.add(hash)
+            handler({ from: id, data: hash })
+          })
+          .catch((err) => {
+            // TODO: how do we want to propagate errors
+            console.log('deliverMessage error:', err)
+          })
       }
 
       /**
@@ -65,27 +74,28 @@ exports.subscribe = (self) => {
        *
        */
       const deliverMessages = () => {
-        deliveryQueue.forEach((hash) => {
-          if (!deliveredMessages.exists(hash)) {
-            deliverMessage(hash)
+        deliveryQueue.forEach((DAGNode) => {
+          if (!deliveredMessages.exists(DAGNode.multihash)) {
+            deliverMessage(DAGNode)
           }
         })
       }
 
       /**
-       * Add a hash to the front of the pending delivery queue
+       * Add a DAGNode to the front of the pending delivery queue
        *
-       * @param {String} hash
+       * @param {Object} DAGNode
        */
-       const addToQueue = (hash) => deliveryQueue.unshift(hash)
+       const addToQueue = (DAGNode) => deliveryQueue.unshift(DAGNode)
 
       /**
        *
        *
-       * @param {String} hash
+       * @param {Object} DAGNode
        */
-      const confirmHashOnNetwork = (hash) => {
-        log.info(`${MODULE_NAME}: Confirming hash (${hash}) on network`)
+      const confirmHashOnNetwork = (DAGNode) => {
+        const hash = DAGNode.multihash
+        log.info(`${MODULE_NAME}: Confirming the previous node for ${hash}`)
 
         // If the hash has been delivered already, no more network lookups
         // are necessary - drain the queue
@@ -94,14 +104,14 @@ exports.subscribe = (self) => {
         }
 
         // Add the new hash to the delivery queue
-        addToQueue(hash)
+        addToQueue(DAGNode)
 
         self._ipfs.object.get(hash, { enc: 'base58' })
           .then((DAG) => {
             const head = DAG.toJSON()
             const prevArry = head.links.filter((l) => l.name === 'prev')
             const networkPrev = prevArry.length && prevArry[0].multihash
-            const localPrev = self.heads.getHeadForStream(id)
+            const localPrev = cachedHead.multihash
 
             // - If there is no 'prev' link in this object, we reached a new root
             // - If 'prev' link matches the cached head, we are up to date, and
@@ -116,14 +126,22 @@ exports.subscribe = (self) => {
           })
       }
 
-      // If there is no cached head, deliver the incoming message
-      if (R.isNil(localHead)) {
-        addToQueue(newHead)
-        return deliverMessages()
-      }
+      self.heads.getHeadForStream(id)
+        .then((headDAG) => {
+          // If there is no cached head, deliver the incoming message
+          if (R.isNil(headDAG)) {
+            addToQueue(headDAG)
+            return deliverMessages()
+          }
 
-      // Otherwise ensure that the new head's 'prev' matches the network's version
-      confirmHashOnNetwork(newHead)
+          cachedHead = headDAG
+          // Otherwise ensure that the new head's 'prev' matches the network's version
+          confirmHashOnNetwork(headDAG)
+        })
+        .catch((err) => {
+          // TODO: how do we want to propagate errors
+          console.log('receive error:', err)
+        })
     }
   }
 

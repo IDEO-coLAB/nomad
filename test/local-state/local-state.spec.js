@@ -11,7 +11,8 @@ describe('local state:', () => {
   const state = new LocalState({ filePath: dbPath })
   const stream1 = 'foo'
   const obj1 = { fookey: 'foovalue' }
-  const objUpdate1 = { fookey2: 'foovalueNew' }
+  const objUpdate1 = { fookey: 'foovalueNew' }
+  const objUpdate2 = { fookey: 'foovalueAnother' }
 
   const stream2 = 'bar'
   const obj2 = { barkey: 'barvalue'}
@@ -58,6 +59,11 @@ describe('local state:', () => {
     .then(() => state.getHeadForStream(stream1))
     .then((obj) => {
       expect(obj).to.eql(objUpdate1)
+      return state.setHeadForStream(stream1, objUpdate2)
+    })
+    .then(() => state.getHeadForStream(stream1))
+    .then((obj) => {
+      expect(obj).to.eql(objUpdate2)
     })
   })
 })

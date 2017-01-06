@@ -5,7 +5,7 @@ const nodeFactory = require('./../utils/temp-node')
 
 const HASH_ENCODING = { enc: 'base58' }
 
-describe('subscriptions:', () => {
+describe.only('subscriptions:', () => {
   let nodeA
   let nodeAId
 
@@ -77,74 +77,83 @@ describe('subscriptions:', () => {
     ])
   })
 
-  describe('subscribe', () => {
-    it('throws when subscribing with no args', () => {
-      const throwerA = () => nodeA.subscribe()
-      expect(throwerA).to.throw
-    })
-
-    it('throws when subscribing without ids', () => {
-      const cb = () => {}
-      const throwerA = () => nodeA.subscribe(cb)
-      expect(throwerA).to.throw
-    })
-
-    it('throws when subscribing with non-array ids', () => {
-      const cb = () => {}
-      const throwerA = () => nodeA.subscribe({}, cb)
-      expect(throwerA).to.throw
-    })
-
-    it('throws when subscribing with empty-array ids', () => {
-      const cb = () => {}
-      const throwerA = () => nodeA.subscribe([], cb)
-      expect(throwerA).to.throw
-    })
-
-    it('throws when subscribing with invalid callback', () => {
-      const throwerA = () => nodeA.subscribe([nodeBId], 'notAfunction')
-      expect(throwerA).to.throw
-    })
-
-    it('A subscribes to B successfully', () => {
-      nodeA.subscribe([nodeBId], () => {})
-      expect(nodeA.subscriptions.size).to.eql(1)
-      expect(nodeA.subscriptions.has(nodeBId)).to.eql(true)
-      nodeA.unsubscribe(nodeBId)
-    })
-
-    describe('does not overwrite existing subscriptions:', () => {
-      let handlerB = () => {}
-      let handlerC = () => {}
-
-      before(() => {
-        nodeA.subscribe([nodeBId], handlerB)
+  describe('subscribe:', () => {
+    describe('single node:', () => {
+      it('throws without args', () => {
+        const throwerA = () => nodeA.subscribe()
+        expect(throwerA).to.throw
       })
 
-      after(() => {
-        nodeA.unsubscribe(nodeBId)
-        nodeA.unsubscribe(nodeCId)
+      it('throws without ids', () => {
+        const cb = () => {}
+        const throwerA = () => nodeA.subscribe(cb)
+        expect(throwerA).to.throw
       })
 
-      it('does not duplicate subscriptions', () => {
-        nodeA.subscribe([nodeBId], () => {})
+      it('throws with non-array ids', () => {
+        const cb = () => {}
+        const throwerA = () => nodeA.subscribe({}, cb)
+        expect(throwerA).to.throw
+      })
+
+      it('throws with empty array ids', () => {
+        const cb = () => {}
+        const throwerA = () => nodeA.subscribe([], cb)
+        expect(throwerA).to.throw
+      })
+
+      it('throws with invalid callback', () => {
+        const throwerA = () => nodeA.subscribe([nodeBId], 'notAfunction')
+        expect(throwerA).to.throw
+      })
+
+      describe('multiple subscribe calls to same hash:', () => {
+        const handlerB = () => {}
+        const handlerC = () => {}
+
+        before(() => {
+          nodeA.subscribe([nodeBId], handlerB)
+        })
+
+        after(() => {
+          nodeA.unsubscribe(nodeBId)
+          nodeA.unsubscribe(nodeCId)
+        })
+
+        it('will not overwrite first subscription', () => {
+          const randomFn = () => {}
+          nodeA.subscribe([nodeBId], randomFn)
+
+          expect(nodeA.subscriptions.size).to.eql(1)
+          expect(nodeA.subscriptions.get(nodeBId)).to.eql(handlerB)
+        })
+
+        it('dedupes and adds new subscriptions', () => {
+          nodeA.subscribe([nodeBId, nodeCId], handlerC)
+
+          expect(nodeA.subscriptions.size).to.eql(2)
+          expect(nodeA.subscriptions.has(nodeBId)).to.eql(true)
+          expect(nodeA.subscriptions.has(nodeCId)).to.eql(true)
+
+          expect(nodeA.subscriptions.get(nodeBId)).to.eql(handlerB)
+          expect(nodeA.subscriptions.get(nodeCId)).to.eql(handlerC)
+        })
+      })
+    })
+
+    describe('multiple nodes (A => B):', () => {
+      it('A subscription list contains B', () => {
+        const handlerOne = () => {}
+        nodeA.subscribe([nodeBId], handlerOne)
+
+        // TODO: swap node.subscriptions to return a list
         expect(nodeA.subscriptions.size).to.eql(1)
-        expect(nodeA.subscriptions.get(nodeBId)).to.eql(handlerB)
-      })
-
-      it('filters out duplicate subscriptions and adds new ones', () => {
-        nodeA.subscribe([nodeBId, nodeCId], handlerC)
-        expect(nodeA.subscriptions.size).to.eql(2)
         expect(nodeA.subscriptions.has(nodeBId)).to.eql(true)
-        expect(nodeA.subscriptions.has(nodeCId)).to.eql(true)
 
-        expect(nodeA.subscriptions.get(nodeBId)).to.eql(handlerB)
-        expect(nodeA.subscriptions.get(nodeCId)).to.eql(handlerC)
+        nodeA.unsubscribe(nodeBId)
       })
-    })
 
-    describe('B publishes to A', () => {
-      it(`A receives from B`, (done) => {
+      it(`B publish a single message => A receives`, (done) => {
         const pubData = new Buffer('This is a publication')
 
         nodeA.subscribe([nodeBId], (msg) => {
@@ -156,28 +165,52 @@ describe('subscriptions:', () => {
         nodeB.publish(pubData)
       })
 
-
-      it(`A recursively walks when falling behind B`, (done) => {
+      it(`B publishes rapid fire => A receives all`, (done) => {
         let receiveCount = 0
 
-        const pubDataTwo = new Buffer('This is publication two')
-        const pubDataThree = new Buffer('This is publication three')
-        const pubDataFour = new Buffer('This is publication four')
+        const pubDataA = new Buffer('This is publication a')
+        const pubDataB = new Buffer('This is publication b')
+        const pubDataC = new Buffer('This is publication c')
+        const pubDataD = new Buffer('This is publication d')
+
+        nodeB.publish(pubDataA)
+        nodeB.publish(pubDataB)
+        nodeB.publish(pubDataC)
+        nodeB.publish(pubDataD)
+
+        nodeA.subscribe([nodeBId], (msg) => {
+          const headHash = msg.data.toString()
+          if (++receiveCount > 3) {
+            nodeA.unsubscribe(nodeBId)
+            ensureIpfsData(headHash, pubDataD, done)
+          }
+        })
+      })
+
+      it(`A misses messages from B => missed messages are found and delivered`, (done) => {
+        let receiveCount = 0
+
+        const pubDataA = new Buffer('This is publication a')
+        const pubDataB = new Buffer('This is publication b')
+        const pubDataC = new Buffer('This is publication c')
+        const pubDataD = new Buffer('This is publication d')
 
         // Miss two publishes
-        nodeB.publish(pubDataTwo)
-        nodeB.publish(pubDataThree)
+        nodeB.publish(pubDataA)
+        nodeB.publish(pubDataB)
 
         setTimeout(() => {
           nodeA.subscribe([nodeBId], (msg) => {
             const headHash = msg.data.toString()
-            if (++receiveCount > 2) {
+            if (++receiveCount > 3) {
               nodeA.unsubscribe(nodeBId)
-              ensureIpfsData(headHash, pubDataFour, done)
+              ensureIpfsData(headHash, pubDataD, done)
             }
           })
 
-          nodeB.publish(pubDataFour)
+          // Trigger two rapid-fire publishes
+          nodeB.publish(pubDataC)
+          nodeB.publish(pubDataD)
         }, 1000)
       })
     })

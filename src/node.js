@@ -108,8 +108,6 @@ module.exports = class Node {
    * @param {Function} handler
    */
   subscribe (ids, handler) {
-    log.info(`${MODULE_NAME}: Subscribing`)
-
     // ids not passed
     if (R.isNil(ids) || typeof ids === 'function' || !R.isArrayLike(ids)) {
       throw new Error(`'ids' must be an array`)
@@ -122,6 +120,8 @@ module.exports = class Node {
     if (typeof handler !== 'function') {
       throw new Error(`'handler' must be a function`)
     }
+
+    log.info(`${MODULE_NAME}: Subscribing to ${ids.join(', ')}`)
 
     ids.filter((id) => !this.subscriptions.has(id))
       .forEach((id) => {
@@ -137,6 +137,7 @@ module.exports = class Node {
    * @param {Function} handler
    */
   unsubscribe (id) {
+    log.info(`${MODULE_NAME}: Unsubscribing from ${id}`)
     this._unsubscribe(id)
     this.subscriptions.delete(id)
   }
