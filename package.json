@@ -38,6 +38,7 @@
     "eslint-config-airbnb-base": "8.0.0",
     "eslint-plugin-import": "1.16.0",
     "ipfs": "0.20.3",
+    "nedb": "^1.8.0",
     "p-queue": "0.2.0",
     "ramda": "0.22.1"
   },
