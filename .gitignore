@@ -3,4 +3,4 @@ npm*.log
 npm*.debug
 
 # Ignore test repos
-test/utils/test-repos
+test/utils/test-*
