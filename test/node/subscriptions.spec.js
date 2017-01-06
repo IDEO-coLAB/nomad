@@ -5,7 +5,7 @@ const nodeFactory = require('./../utils/temp-node')
 
 const HASH_ENCODING = { enc: 'base58' }
 
-describe.only('subscriptions:', () => {
+describe('subscriptions:', () => {
   let nodeA
   let nodeAId
 
@@ -31,8 +31,8 @@ describe.only('subscriptions:', () => {
         // comes with some unicode commands at the start and end
         const deserializedBuf = testDataBuf.slice(4, testDataBuf.length-2)
         expect(deserializedBuf).to.eql(targetData)
-        done()
       })
+      .then(done)
   }
 
   before(() => {
@@ -65,14 +65,15 @@ describe.only('subscriptions:', () => {
       .then(() => {
         // Note: Connection timing is an issue so we need to wait
         // for the connections to open
-        return new Promise((resolve) => setTimeout(resolve, 1000))
+        return new Promise((resolve) => setTimeout(resolve, 2000))
       })
   })
 
   after(() => {
     return Promise.all([
       nodeA.teardown(),
-      nodeB.teardown()
+      nodeB.teardown(),
+      nodeC.teardown(),
     ])
   })
 
@@ -143,11 +144,10 @@ describe.only('subscriptions:', () => {
     })
 
     describe('B publishes to A', () => {
-      it(`A receives a valid node head from B`, (done) => {
+      it(`A receives from B`, (done) => {
         const pubData = new Buffer('This is a publication')
 
         nodeA.subscribe([nodeBId], (msg) => {
-          console.log(msg)
           const headHash = msg.data.toString()
           nodeA.unsubscribe(nodeBId)
           ensureIpfsData(headHash, pubData, done)
@@ -157,61 +157,29 @@ describe.only('subscriptions:', () => {
       })
 
 
-      it(`A walks back when falling behind B publishes`, (done) => {
-        console.log('\n\n\n--STARTING--\n\n')
-        console.log('nodeA', nodeAId)
-        console.log('nodeB', nodeBId)
-        console.log('-----------------------------------------------------------')
-        console.log('-----------------------------------------------------------\n\n')
-        // nodeA.unsubscribe(nodeBId)
-        console.log('nodeA subs:', nodeA.subscriptions.size)
+      it(`A recursively walks when falling behind B`, (done) => {
+        let receiveCount = 0
 
         const pubDataTwo = new Buffer('This is publication two')
         const pubDataThree = new Buffer('This is publication three')
         const pubDataFour = new Buffer('This is publication four')
 
+        // Miss two publishes
         nodeB.publish(pubDataTwo)
-        // nodeB.publish(pubDataThree)
-
-
-        let count = 0
+        nodeB.publish(pubDataThree)
 
         setTimeout(() => {
           nodeA.subscribe([nodeBId], (msg) => {
             const headHash = msg.data.toString()
-            console.log('FIRED THE SUBSCRIBE HANDLER WITH: ', headHash)
-            if (++count > 2) {
-              done()
+            if (++receiveCount > 2) {
+              nodeA.unsubscribe(nodeBId)
+              ensureIpfsData(headHash, pubDataFour, done)
             }
-            // ensureIpfsData(headHash, pubData, done)
           })
 
-          nodeB.publish(pubDataThree)
           nodeB.publish(pubDataFour)
         }, 1000)
-
       })
     })
   })
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

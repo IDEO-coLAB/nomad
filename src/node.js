@@ -99,13 +99,7 @@ module.exports = class Node {
     if (R.isNil(data)) {
       throw new Error('Publish requires a data argument')
     }
-    // return this._publish(this.identity.id, data)
-    return new Promise((resolve, reject) => {
-      queue.add(() => this._publish(this.identity.id, data)
-          .then(resolve)
-          .catch(reject)
-      )
-    })
+    return queue.add(() => this._publish(this.identity.id, data))
   }
 
   /**

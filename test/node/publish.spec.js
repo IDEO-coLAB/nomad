@@ -3,7 +3,6 @@ const promisify = require('es6-promisify')
 
 const ipfsFactory = require('./../utils/temp-ipfs')
 const nodeFactory = require('./../utils/temp-node')
-// const localState = require('../../src/local-state')
 
 const HASH_ENCODING = { enc: 'base58' }
 
@@ -57,7 +56,7 @@ describe('publish:', () => {
       .then(() => {
         // Note: Connection timing is an issue so we need to wait
         // for the connections to open
-        return new Promise((resolve) => setTimeout(resolve, 1000))
+        return new Promise((resolve) => setTimeout(resolve, 2000))
       })
   })
 
