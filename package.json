@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "DEBUG=nomad* mocha -t 120000 test/**/*.spec.js",
+    "test": "mocha -t 10000 test/*.spec.js test/**/*.spec.js",
     "example:sub": "DEBUG=nomad* node examples/subscribe.js",
     "example:pub": "DEBUG=nomad* node examples/publish.js"
   },
@@ -31,25 +31,20 @@
   },
   "homepage": "https://github.com/IDEO-coLAB/nomad#readme",
   "dependencies": {
-    "bs58": "3.0.0",
     "chai": "3.5.0",
     "debug": "2.2.0",
+    "es6-promisify": "5.0.0",
     "eslint": "3.8.1",
     "eslint-config-airbnb-base": "8.0.0",
     "eslint-plugin-import": "1.16.0",
-    "ipfs-api": "6.0.3",
-    "ipfs-merkle-dag": "0.6.2",
-    "lru-cache": "4.0.1",
-    "multihashes": "0.2.2",
-    "peer-id": "0.7.0",
-    "pull-stream": "3.4.3",
-    "q": "1.4.1",
-    "ramda": "0.22.1",
-    "save": "2.3.0",
-    "stream-to-promise": "^2.2.0",
-    "task-queue": "^1.0.2"
+    "ipfs": "0.20.3",
+    "nedb": "^1.8.0",
+    "ramda": "0.22.1"
   },
   "devDependencies": {
+    "fs-pull-blob-store": "0.4.1",
+    "ipfs-repo": "0.11.2",
+    "left-pad": "1.1.3",
     "mocha": "^3.1.2"
   }
 }
