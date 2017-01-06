@@ -44,13 +44,12 @@ module.exports = (self) => {
    * @returns {Promise} resolves with the newly published head's hash
    */
   const broadcastAndStore = (id, dag) => {
-    log.info(`${MODULE_NAME}: Broadcasting and storing ${dag.toJSON().multihash}`)
-
     const dagJSON = dag.toJSON()
     const mhBuf = new Buffer(dagJSON.multihash)
 
     return self._ipfs.pubsub.publish(id, mhBuf)
       .then(() => {
+        log.info(`${MODULE_NAME}: ${self.identity.id} published ${dag.toJSON().multihash}`)
         return self.heads.setHeadForStream(id, dagJSON)
       })
       // Note: catch might handle the idea of 'rollbacks' in an early 'atomic' version
@@ -65,7 +64,6 @@ module.exports = (self) => {
    * @returns {Promise} resolves with the newly published head's hash
    */
   const publishRoot = (id, buf) => {
-    log.info(`${MODULE_NAME}: Publishing new root`)
     return createHead(buf)
       .then((dag) => broadcastAndStore(id, dag))
   }
@@ -79,8 +77,6 @@ module.exports = (self) => {
    * @returns {Promise} resolves with the newly published head's hash
    */
   const publishData = (id, buf) => {
-    log.info(`${MODULE_NAME}: Publishing new data`)
-
     return self.heads.getHeadForStream(id)
       .then((prevDAG) => {
         const prevHash = prevDAG.multihash

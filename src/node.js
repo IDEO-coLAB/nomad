@@ -55,14 +55,13 @@ module.exports = class Node {
    * @returns {Promise} resolves with the node's identity
    */
   start () {
-    log.info(`${MODULE_NAME}: Starting`)
-
     return this._ipfs.initP(this._ipfsConfig.ipfs)
       .then(this._loadP)
       .then(this._ipfs.goOnlineP)
       .then(this._ipfs.id)
       .then((id) => {
         this.identity = id
+        log.info(`${MODULE_NAME}: Started ${this.identity.id}`)
         return this
       })
   }
@@ -73,7 +72,7 @@ module.exports = class Node {
    * @returns {Promise} resolves with the node's identity
    */
   stop () {
-    log.info(`${MODULE_NAME}: Stopping`)
+    log.info(`${MODULE_NAME}: Stopped ${this.identity.id}`)
     return this._ipfs.goOfflineP()
   }
 
@@ -93,8 +92,6 @@ module.exports = class Node {
    * @returns {Promise} resolves with the newly published head's hash
    */
   publish (data) {
-    log.info(`${MODULE_NAME}: Publishing`)
-
     if (R.isNil(data)) {
       throw new Error('Publish requires a data argument')
     }
@@ -121,7 +118,7 @@ module.exports = class Node {
       throw new Error(`'handler' must be a function`)
     }
 
-    log.info(`${MODULE_NAME}: Subscribing to ${ids.join(', ')}`)
+    log.info(`${MODULE_NAME}: ${this.identity.id} subscribe to ${ids.join(', ')}`)
 
     ids.filter((id) => !this.subscriptions.has(id))
       .forEach((id) => {
@@ -137,7 +134,7 @@ module.exports = class Node {
    * @param {Function} handler
    */
   unsubscribe (id) {
-    log.info(`${MODULE_NAME}: Unsubscribing from ${id}`)
+    log.info(`${MODULE_NAME}: ${this.identity.id} unsubscribe from ${id}`)
     this._unsubscribe(id)
     this.subscriptions.delete(id)
   }

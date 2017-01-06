@@ -56,6 +56,7 @@ class State {
    * @return {Promise} Promise resolves to a DAG node object
    */
   setHeadForStream (streamHash, object) {
+    console.log('SETTING', streamHash)
     const errorUpdateNotFound = new Error(`Failed to update ${streamHash}: Hash not found`)
 
     return new Promise((resolve, reject) => {
@@ -90,7 +91,14 @@ class State {
               reject(errorUpdateNotFound)
               return
             }
-            resolve(object)
+            // Return the most recent one
+            this.db.findOne({ streamHash: streamHash }, (err, updatedObj) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(updatedObj.object)
+            })
           }
         )
       })

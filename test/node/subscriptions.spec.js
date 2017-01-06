@@ -142,6 +142,10 @@ describe.only('subscriptions:', () => {
     })
 
     describe('multiple nodes (A => B):', () => {
+      before(() => {
+        return nodeB.publish(new Buffer('A root is now published'))
+      })
+
       it('A subscription list contains B', () => {
         const handlerOne = () => {}
         nodeA.subscribe([nodeBId], handlerOne)
@@ -154,10 +158,12 @@ describe.only('subscriptions:', () => {
       })
 
       it(`B publish a single message => A receives`, (done) => {
+        console.log('\n\n\n--------------------------------------------\n\n')
         const pubData = new Buffer('This is a publication')
-
+        let count = 0
         nodeA.subscribe([nodeBId], (msg) => {
           const headHash = msg.data.toString()
+          console.log('THE HANDLER IS CALLED:', ++count, headHash)
           nodeA.unsubscribe(nodeBId)
           ensureIpfsData(headHash, pubData, done)
         })
@@ -165,7 +171,7 @@ describe.only('subscriptions:', () => {
         nodeB.publish(pubData)
       })
 
-      it(`B publishes rapid fire => A receives all`, (done) => {
+      xit(`B publishes rapid fire => A receives all`, (done) => {
         let receiveCount = 0
 
         const pubDataA = new Buffer('This is publication a')
@@ -187,7 +193,7 @@ describe.only('subscriptions:', () => {
         })
       })
 
-      it(`A misses messages from B => missed messages are found and delivered`, (done) => {
+      xit(`A misses messages from B => missed messages are found and delivered`, (done) => {
         let receiveCount = 0
 
         const pubDataA = new Buffer('This is publication a')
