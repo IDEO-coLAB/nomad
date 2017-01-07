@@ -77,7 +77,7 @@ describe.only('subscriptions:', () => {
     ])
   })
 
-  describe('subscribe:', () => {
+  xdescribe('subscribe:', () => {
     describe('single node:', () => {
       it('throws without args', () => {
         const throwerA = () => nodeA.subscribe()

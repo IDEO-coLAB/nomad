@@ -7,7 +7,7 @@ const promisifyIPFS = require('./utils/promisify-ipfs')
 const log = require('./utils/log')
 const publish = require('./publish')
 const subscriptions = require('./subscriptions')
-const State = require('./local-state')
+const State = require('./local-state').StreamHead
 
 const MODULE_NAME = 'NODE'
 

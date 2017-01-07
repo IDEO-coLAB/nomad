@@ -12,6 +12,7 @@
   }
 
   getMessage(hash) {
+  	// needs to handle cache miss and then fetch message header from ipfs
   	return this.map[hash]
   }
 

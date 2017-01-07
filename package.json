@@ -34,10 +34,11 @@
     "bloom-filter-js": "0.0.12",
     "chai": "3.5.0",
     "debug": "2.2.0",
+    "es6-promisify": "^5.0.0",
     "eslint": "3.8.1",
     "eslint-config-airbnb-base": "8.0.0",
     "eslint-plugin-import": "1.16.0",
-    "ipfs": "0.20.3",
+    "ipfs": "ipfs/js-ipfs#9371b67d2c1880947fccaf264ef19e5e0a7b2575",
     "nedb": "^1.8.0",
     "p-queue": "0.2.0",
     "ramda": "0.22.1"

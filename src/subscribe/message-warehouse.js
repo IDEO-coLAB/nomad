@@ -10,7 +10,7 @@
 
  class MessageWarehouse {
   /**
-   * @param {function} new message handler. Handler takes arguments (hash, message) and returns 
+   * @param {function} new message handler. Handler takes arguments (publisher id, hash, message) and returns 
    * a promise that resolves when the message has been delivered to the users callback.
    */
   constructor (handler) {
@@ -18,9 +18,11 @@
     this.queue = new PQueue({concurrency: 1})
   }
 
-  addMessage(hash, message) {
+  addMessage(id, hash, message) {
     this.queue.add(() => {
-      this.handler(hash, message)
+      this.handler(id, hash, message)
     })
   }
 }
+
+module.exports = MessageWarehouse
