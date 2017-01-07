@@ -1,4 +1,4 @@
 const StreamHead = require('./stream-head')
-const MessageCache = require('./message-cache')
+const MessageHeaderCache = require('./message-header-cache')
 
-module.exports = { StreamHead, MessageCache }
+module.exports = { StreamHead, MessageHeaderCache }
