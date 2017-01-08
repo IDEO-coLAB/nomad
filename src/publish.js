@@ -12,10 +12,11 @@ module.exports = (self) => {
   /**
    * Create a new publishing head object with the appropriate 'data' link
    *
-   * @param {Buffer} buf
+   * @param {Buffer} buffer of the user message
+   * @param {Integer} idx, sequence number of the message
    * @returns {Promise} resolves with the newly added DAG object
    */
-  const createHead = (buf) => {
+  const createHead = (buf, idx) => {
     return self._ipfs.files.add(buf)
       .then((files) => {
         return Promise.all([
@@ -32,6 +33,11 @@ module.exports = (self) => {
 
         return self._ipfs.object.patch.addLink(emptyHeadDAG.multihash, link)
       })
+      .then((headDAGObj) => {
+        const headerData = { idx: idx }
+        const headerDataBuf = new Buffer(JSON.stringify(headerData))
+        return self._ipfs.object.patch.setData(headDAGObj.multihash, headerDataBuf)
+      })
       .then(self._ipfs.object.put)
   }
 
@@ -45,11 +51,17 @@ module.exports = (self) => {
    */
   const broadcastAndStore = (id, dag) => {
     const dagJSON = dag.toJSON()
-    const mhBuf = new Buffer(dagJSON.multihash)
+    const dagJSONPubsub = Object.assign({}, dagJSON)
+
+    // convert from buf to string to obj for sending over pubsub
+    dagJSONPubsub.data = JSON.parse(dagJSONPubsub.data.toString())
+    // stringify the whole thing and create buf which ipfs wants
+    const mhBuf = new Buffer(JSON.stringify(dagJSONPubsub))
 
     return self._ipfs.pubsub.publish(id, mhBuf)
       .then(() => {
         log.info(`${MODULE_NAME}: ${self.identity.id} published ${dag.toJSON().multihash}`)
+        // streamHead expects object with data as buffer.
         return self.heads.setHeadForStream(id, dagJSON)
       })
       // Note: catch might handle the idea of 'rollbacks' in an early 'atomic' version
@@ -64,7 +76,7 @@ module.exports = (self) => {
    * @returns {Promise} resolves with the newly published head's hash
    */
   const publishRoot = (id, buf) => {
-    return createHead(buf)
+    return createHead(buf, 0)
       .then((dag) => broadcastAndStore(id, dag))
   }
 
@@ -80,9 +92,11 @@ module.exports = (self) => {
     return self.heads.getHeadForStream(id)
       .then((prevDAG) => {
         const prevHash = prevDAG.multihash
+        const prevHeadData = JSON.parse(prevDAG.data.toString())
+        const newHeadIdx = prevHeadData.idx + 1
 
         return Promise.all([
-          createHead(buf),
+          createHead(buf, newHeadIdx),
           self._ipfs.object.get(prevHash, { enc: 'base58' }) // avoid this lookup by storing whole DAG
         ])
       })

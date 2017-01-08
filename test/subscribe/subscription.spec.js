@@ -48,9 +48,12 @@ describe.only('subscriptions:', () => {
   describe('testing subscribe:', () => {
     it('scratch', () => {
       subscriberIPFS.pubsub.subscribe(publisher.identity.id, (msg) => {
-        console.log(msg)
+        console.log(JSON.parse(msg.data.toString()))
       })
       return publisher.publish('its a message')
+      .then(() => {
+        return publisher.publish('another message')
+      })
       // .then(() => {
     })
   })

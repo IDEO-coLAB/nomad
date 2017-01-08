@@ -44,7 +44,7 @@ class State {
           resolve(null)
           return
         }
-        resolve(object.object)
+        resolve(this.deserializeObject(object.object))
       })
     })
   }
@@ -55,7 +55,8 @@ class State {
    * @param {string} object - the DAG object to be stored
    * @return {Promise} Promise resolves to a DAG node object
    */
-  setHeadForStream (streamHash, object) {
+  setHeadForStream (streamHash, _object) {
+    const object = this.serializeObject(_object)
     const errorUpdateNotFound = new Error(`Failed to update ${streamHash}: Hash not found`)
 
     return new Promise((resolve, reject) => {
@@ -102,6 +103,18 @@ class State {
         )
       })
     })
+  }
+
+  // message header objects have a data property that is a buffer
+  // convert to string before storage
+  serializeObject (object) {
+    object.data = object.data.toString()
+    return object
+  }
+
+  deserializeObject (object) {
+    object.data = new Buffer(object.data)
+    return object
   }
 }
 
