@@ -8,7 +8,7 @@
  // Currently assuming that this doesn't need to be persisted to disk, only needs to be in memory
  // TODO: should we be using Maps. What about browser compatability?
 
- class MessageWarehouse {
+ class MessageHeaderWarehouse {
   /**
    * @param {function} new message handler. Handler takes arguments (publisher id, hash, message) and returns 
    * a promise that resolves when the message has been delivered to the users callback.
@@ -18,11 +18,11 @@
     this.queue = new PQueue({concurrency: 1})
   }
 
-  addMessage(id, hash, message) {
+  addMessageHeader(messageHeader) {
     this.queue.add(() => {
-      this.handler(id, hash, message)
+      this.handler(messageHeader)
     })
   }
 }
 
-module.exports = MessageWarehouse
+module.exports = MessageHeaderWarehouse

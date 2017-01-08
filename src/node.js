@@ -6,7 +6,7 @@ const PQueue = require('p-queue')
 const promisifyIPFS = require('./utils/promisify-ipfs')
 const log = require('./utils/log')
 const publish = require('./publish')
-const subscriptions = require('./subscriptions')
+// const subscriptions = require('./subscriptions')
 const State = require('./local-state').StreamHead
 
 const MODULE_NAME = 'NODE'
@@ -40,8 +40,8 @@ module.exports = class Node {
     this._ipfs = promisifyIPFS(new IPFS(config.repo))
 
     this._publish = publish(this)
-    this._subscribe = subscriptions.subscribe(this)
-    this._unsubscribe = subscriptions.unsubscribe(this)
+    // this._subscribe = subscriptions.subscribe(this)
+    // this._unsubscribe = subscriptions.unsubscribe(this)
 
     this.identity = null
     this.subscriptions = new Map()

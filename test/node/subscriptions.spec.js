@@ -29,6 +29,8 @@ describe.only('subscriptions:', () => {
         // TODO: figure out a better way or the IPFS API way
         // of deserializing a dagnode's data. This IPLD object
         // comes with some unicode commands at the start and end
+        // Yo gav, I think it may be because you're creating the DAG node 
+        // with ipfs.files.add instead of ipfs.object.patch.data -REW
         const deserializedBuf = testDataBuf.slice(4, testDataBuf.length-2)
         expect(deserializedBuf).to.eql(targetData)
       })

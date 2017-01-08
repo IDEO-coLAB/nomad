@@ -31,7 +31,6 @@
   },
   "homepage": "https://github.com/IDEO-coLAB/nomad#readme",
   "dependencies": {
-    "bloom-filter-js": "0.0.12",
     "chai": "3.5.0",
     "debug": "2.2.0",
     "es6-promisify": "^5.0.0",

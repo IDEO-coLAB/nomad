@@ -1,32 +1,48 @@
 const R = require('ramda')
-const { BloomFilter } = require('bloom-filter-js')
-
 const log = require('./utils/log')
 
 /**
- * TODO:
+ * Presents interface for adding, removing subscriptions,
+ * tracks map of existing subscriptions.
  * - Error handling on subscribe receive fails...
  * - Start defining the receive protocols and formatting at this layer
- * - Move subscriptions into the state / cache layer
- * - Move the delivered messages bloom filter into the state / cache layer
  */
 
 const MODULE_NAME = 'SUBSCRIPTIONS'
-
 module.exports = exports
 
-// Keeps track of all existing subscriptions for the Node
-let subscriptions = new Map()
+class SubscriptionsManager {
+  constructor(node) {
+    this.node = node
+    // Keeps track of all existing subscriptions for the Node
+    // Map values are instances of Subscription
+    this.subscriptions = new Map()
+  }
 
-// Used to determine if a message has definitively not been delivered
-let deliveredMessages = new BloomFilter()
+  /**
+   * Exposed subscribe API
+   *
+   * @param {id} peer ID of the subscription
+   * @param {handler} callback to fire when new messages arrive
+   */
+  subscribe(id, handler) {}
 
-/**
- * Exposed subscribe API
- *
- * @param {Object} self (Node instance)
- * @returns {Function}
- */
+  /**
+   * Exposed unsubscribe API
+   *
+   * @param {id} peer ID of the subscription 
+   */
+  unsubscribe(id) {
+    const ipfsHandler = subscriptions.get(hash)
+    self._ipfs.pubsub.unsubscribe(hash, ipfsHandler)
+    subscriptions.delete(hash)
+
+    log.info(`${MODULE_NAME}: ${self.identity.id} unsubscribed from ${hash}`)
+  }
+}
+
+
+
 exports.subscribe = (self) => {
   /**
    * Handler function called each time a new message is received from the network
@@ -175,21 +191,5 @@ exports.subscribe = (self) => {
     const ipfsHandler = receive(id, handler)
     subscriptions.set(id, ipfsHandler)
     self._ipfs.pubsub.subscribe(id, ipfsHandler)
-  }
-}
-
-/**
- * Exposed unsubscribe API
- *
- * @param {Object} self (Node instance)
- * @returns {Function}
- */
-exports.unsubscribe = (self) => {
-  return (hash) => {
-    const ipfsHandler = subscriptions.get(hash)
-    self._ipfs.pubsub.unsubscribe(hash, ipfsHandler)
-    subscriptions.delete(hash)
-
-    log.info(`${MODULE_NAME}: ${self.identity.id} unsubscribed from ${hash}`)
   }
 }
