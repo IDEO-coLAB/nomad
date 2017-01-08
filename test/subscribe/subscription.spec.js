@@ -65,5 +65,6 @@ describe.only('subscriptions:', () => {
         return publisher.publish('another message')
       })
     })
+    // not calling done intentionally
   })
 })
