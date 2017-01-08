@@ -20,7 +20,8 @@
 
   addMessageHeader(messageHeader) {
     this.queue.add(() => {
-      this.handler(messageHeader)
+      // handler needs to be promise returning
+      return this.handler(messageHeader)
     })
   }
 }

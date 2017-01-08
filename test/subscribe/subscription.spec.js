@@ -3,12 +3,21 @@ const promisify = require('es6-promisify')
 
 const nodeFactory = require('./../utils/temp-node')
 const ipfsFactory = require('./../utils/temp-ipfs')
+const tempLocalStatePath = require('../utils/temp-local-state')()
+const StreamHead = require('../../src/local-state').StreamHead
+const Subscription = require('../../src/subscribe/subscription')
 
 const HASH_ENCODING = { enc: 'base58' }
+
+const messageCallback = (message) => {
+  console.log(`got message at cb: ${message.multihash}`)
+}
 
 describe.only('subscriptions:', () => {
   let publisher
   let subscriberIPFS 
+  let subscription
+  const streamHeadState = new StreamHead({ filePath: tempLocalStatePath })
 
   before(() => {
     return Promise.all([
@@ -25,6 +34,7 @@ describe.only('subscriptions:', () => {
       })
       .then((_ipfs) => {
         subscriberIPFS = _ipfs
+        subscription = new Subscription(publisher.identity.id, _ipfs, streamHeadState, messageCallback)
         return _ipfs.start()
       })
       .then(() => {
@@ -46,15 +56,14 @@ describe.only('subscriptions:', () => {
   })
 
   describe('testing subscribe:', () => {
-    it('scratch', () => {
-      subscriberIPFS.pubsub.subscribe(publisher.identity.id, (msg) => {
-        console.log(JSON.parse(msg.data.toString()))
+    it('scratch', (done) => {
+      subscription.start()
+      .then(() => {
+        return publisher.publish('its a message')
       })
-      return publisher.publish('its a message')
       .then(() => {
         return publisher.publish('another message')
       })
-      // .then(() => {
     })
   })
 })

@@ -51,17 +51,16 @@ module.exports = (self) => {
    */
   const broadcastAndStore = (id, dag) => {
     const dagJSON = dag.toJSON()
-    const dagJSONPubsub = Object.assign({}, dagJSON)
 
     // convert from buf to string to obj for sending over pubsub
-    dagJSONPubsub.data = JSON.parse(dagJSONPubsub.data.toString())
+    // and storing head
+    dagJSON.data = JSON.parse(dagJSON.data.toString())
     // stringify the whole thing and create buf which ipfs wants
-    const mhBuf = new Buffer(JSON.stringify(dagJSONPubsub))
+    const mhBuf = new Buffer(JSON.stringify(dagJSON))
 
     return self._ipfs.pubsub.publish(id, mhBuf)
       .then(() => {
-        log.info(`${MODULE_NAME}: ${self.identity.id} published ${dag.toJSON().multihash}`)
-        // streamHead expects object with data as buffer.
+        log.info(`${MODULE_NAME}: ${self.identity.id} published ${dagJSON.multihash}`)
         return self.heads.setHeadForStream(id, dagJSON)
       })
       // Note: catch might handle the idea of 'rollbacks' in an early 'atomic' version
@@ -92,8 +91,7 @@ module.exports = (self) => {
     return self.heads.getHeadForStream(id)
       .then((prevDAG) => {
         const prevHash = prevDAG.multihash
-        const prevHeadData = JSON.parse(prevDAG.data.toString())
-        const newHeadIdx = prevHeadData.idx + 1
+        const newHeadIdx = prevDAG.data.idx + 1
 
         return Promise.all([
           createHead(buf, newHeadIdx),

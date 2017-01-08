@@ -18,7 +18,9 @@
    */
   getMessageHeader(hash) {
   	const header = this.map[hash]
-  	if (header) { return Promise.resolve(header) }
+  	if (header) { 
+      return Promise.resolve(header) 
+    }
 
   	return this.ipfs.object.data(hash, { enc: 'base58' })
     	.then((data) => {

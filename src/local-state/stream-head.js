@@ -23,9 +23,10 @@ const Datastore = require('nedb')
 
 class State {
   constructor (config) {
-      this.db = new Datastore({ filename: config.filePath, autoload: true })
-      // Nedb will automatically persist to browser local storage
-      // if filename is set and running in browser
+    // this.config = config // for debugging
+    this.db = new Datastore({ filename: config.filePath, autoload: true })
+    // Nedb will automatically persist to browser local storage
+    // if filename is set and running in browser
   }
 
   /**
@@ -44,7 +45,8 @@ class State {
           resolve(null)
           return
         }
-        resolve(this.deserializeObject(object.object))
+        resolve(object.object)
+        return
       })
     })
   }
@@ -55,8 +57,7 @@ class State {
    * @param {string} object - the DAG object to be stored
    * @return {Promise} Promise resolves to a DAG node object
    */
-  setHeadForStream (streamHash, _object) {
-    const object = this.serializeObject(_object)
+  setHeadForStream (streamHash, object) {
     const errorUpdateNotFound = new Error(`Failed to update ${streamHash}: Hash not found`)
 
     return new Promise((resolve, reject) => {
@@ -103,18 +104,6 @@ class State {
         )
       })
     })
-  }
-
-  // message header objects have a data property that is a buffer
-  // convert to string before storage
-  serializeObject (object) {
-    object.data = object.data.toString()
-    return object
-  }
-
-  deserializeObject (object) {
-    object.data = new Buffer(object.data)
-    return object
   }
 }
 
