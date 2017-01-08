@@ -22,9 +22,7 @@
 
   	return this.ipfs.object.data(hash, { enc: 'base58' })
     	.then((data) => {
-    		console.log(data)
-    		console.log(data.toString())
-    		const obj = JSON.parse(data.toString())
+    		const obj = JSON.parse(data)
 	      return Promise.resolve(obj)
     })	
   }

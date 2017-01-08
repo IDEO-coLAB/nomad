@@ -47,6 +47,16 @@ module.exports = {
       })
     }
 
+    ipfs.newObject = (message) => {
+      return ipfs.object.new()
+        .then((DAGObject) => {
+          return ipfs.object.patch.setData(DAGObject.multihash, new Buffer(message))
+        })
+        .then((DAGObject) => {
+          return ipfs.object.put(DAGObject)
+        })
+    }
+
     return new Promise((resolve, reject) => {
       ipfs.init(factoryConfig.ipfs, (err) => {
         if (err) {

@@ -8,8 +8,14 @@ describe('message-header-cache', () => {
   let ipfs
   let cache
 
+  const hash1 = 'abc123'
+  const messageHeader1 = {fookey: 'foovalue'}
+
+  const hash2 = 'def123'
+  const messageHeader2 = {fookey: 'foovalue2'}
+
   let hash3
-  const messageHeader3 = [0]
+  const messageHeader3 = { fookey: 'foovalue3' }
   const buf = new Buffer(JSON.stringify(messageHeader3))
 
   before(() => {
@@ -20,10 +26,10 @@ describe('message-header-cache', () => {
       })
       .then(() => {
         cache = new MessageHeaderCache(ipfs)
-        return ipfs.files.add(buf)
+        return ipfs.newObject(buf)
       })
       .then((obj) => {
-        hash3 = obj[0].hash
+        hash3 = obj.toJSON().multihash
         return Promise.resolve(null)
       })
   })
@@ -31,12 +37,6 @@ describe('message-header-cache', () => {
   after(() => {
     return ipfs.teardown()
   })
-
-  const hash1 = 'abc123'
-  const messageHeader1 = {fookey: 'foovalue'}
-
-  const hash2 = 'def123'
-  const messageHeader2 = {fookey: 'foovalue2'}
 
   it('adds and gets a message from the cache', () => {
     cache.addMessageHeader(hash1, messageHeader1)
@@ -54,8 +54,7 @@ describe('message-header-cache', () => {
 
   it('misses the cache and fetches a header from ipfs', () => {
     return cache.getMessageHeader(hash3).then((m) => {
-      const msg = m.data.toString()
-      expect(msg).to.deep.equal(messageHeader3)
+      expect(m).to.deep.equal(messageHeader3)
     })
   })
 })
