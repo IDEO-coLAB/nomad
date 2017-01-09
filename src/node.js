@@ -6,7 +6,7 @@ const PQueue = require('p-queue')
 const promisifyIPFS = require('./utils/promisify-ipfs')
 const log = require('./utils/log')
 const publish = require('./publish')
-// const subscriptions = require('./subscriptions')
+const SubscriptionManager = require('./subscribe/subscription-manager')
 const State = require('./local-state').StreamHead
 
 const MODULE_NAME = 'NODE'
@@ -17,6 +17,7 @@ const queue = new PQueue({concurrency: 1})
  * TODO:
  * - Better define config passing and init options
  * - Better / unified error handling within and across modules
+ * - API call to get list of subscription ids.
  */
 
 const DEFAULT_CONFIG = {
@@ -40,11 +41,9 @@ module.exports = class Node {
     this._ipfs = promisifyIPFS(new IPFS(config.repo))
 
     this._publish = publish(this)
-    // this._subscribe = subscriptions.subscribe(this)
-    // this._unsubscribe = subscriptions.unsubscribe(this)
+    this._subscriptionManager = new SubscriptionManager(this)
 
     this.identity = null
-    this.subscriptions = new Map()
     // TODO: figure out the naming and api here, this is an initial job for tests
     this.heads = new State({ filePath: config.db })
   }
@@ -122,8 +121,7 @@ module.exports = class Node {
 
     ids.filter((id) => !this.subscriptions.has(id))
       .forEach((id) => {
-        this._subscribe(id, handler)
-        this.subscriptions.set(id, handler)
+        this.subscriptionManager.subscribe(id, handler)
       })
   }
 
@@ -135,7 +133,6 @@ module.exports = class Node {
    */
   unsubscribe (id) {
     log.info(`${MODULE_NAME}: ${this.identity.id} unsubscribe from ${id}`)
-    this._unsubscribe(id)
-    this.subscriptions.delete(id)
+    this.subscriptionManager.unsubscribe(id)
   }
 }

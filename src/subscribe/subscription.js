@@ -7,10 +7,12 @@ const util = require('util')
 // older messages not yet delivered up to this many
 const ITERATION_LIMIT = 1000000
 
-// register callback with flood sub
-// get new message
-// add to warehouse
-// add to cache
+// TODO: 
+// - need to map message headers to full message
+// - logging info and errors
+// - stash callback function so we can give it back to ipfs when we disconnect
+// - change constructor to accept user new message callback not
+// new header callback.
 
 class Subscription {
 	constructor(id, ipfs, streamHeadState, newHeaderCallback) {
@@ -43,10 +45,14 @@ class Subscription {
 		})
 	}
 
-	recursiveFetchHeader(header, lastDeliveredHeader, deliveryQueue) {
-		// delete from the cache because we're dealing with it
-		this.cache.deleteMessageHeader(header.multihash)
-		
+	// TODO: is this the right way to unsubscribe?
+	// Why does unsubscribe need a ref to ipfsHandler?
+	end() {
+		this.ipfs.pubsub.unsubscribe(this.id, ipfsHandler)
+		log.info(`${MODULE_NAME}: ${self.identity.id} unsubscribed from ${hash}`)
+	}
+
+	recursiveFetchHeader(header, lastDeliveredHeader, deliveryQueue) {	
 		// base cases, end recursion
 		// too many iterations
 		if (deliveryQueue.length > this.iterationLimit) {
@@ -79,6 +85,8 @@ class Subscription {
 			.then((lastDeliveredHeader) => {
 				if (lastDeliveredHeader && lastDeliveredHeader.data.idx >= header.data.idx) {
 					// we've seen this message before
+					// delete from the cache because we're dealing with it
+					this.cache.deleteMessageHeader(header.multihash)
 					return Promise.resolve(null)
 				}
 
@@ -86,6 +94,7 @@ class Subscription {
 				if (R.isNil(lastDeliveredHeader)) {
 					// this is a new subscription for this node and this is first message
 					// don't fetch previous messages, just deliver this one
+					this.cache.deleteMessageHeader(header.multihash)
 					return this.setHead(header)
 						.then(() => {
 							this.newHeaderCallback(header)
@@ -99,8 +108,9 @@ class Subscription {
 						return this.recursiveFetchHeader(header, lastDeliveredHeader, [])
 					})
 					.then((deliveryQueue) => {
-						R.forEach((header) => {
-							this.newHeaderCallback(header)
+						R.forEach((_header) => {
+							this.cache.deleteMessageHeader(_header.multihash)
+							this.newHeaderCallback(_header)
 						}, deliveryQueue)
 						return Promise.resolve(null)
 					})
@@ -110,6 +120,7 @@ class Subscription {
 	decodePubsubMessage(pubsubMessage) {
 		return JSON.parse(pubsubMessage.data.toString())
 	}
+
 }
 
 module.exports = Subscription
