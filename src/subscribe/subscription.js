@@ -1,7 +1,7 @@
 const R = require('ramda')
 const MessageHeaderCache = require('../local-state').MessageHeaderCache
 const MessageHeaderWarehouse = require('./message-header-warehouse')
-const util = require('util')
+const HeaderMessageResolver = require('./header-message-resolver')
 
 // when a new header comes in, follow prev links and deliver
 // older messages not yet delivered up to this many
@@ -15,7 +15,7 @@ const ITERATION_LIMIT = 1000000
 // new header callback.
 
 class Subscription {
-	constructor(id, ipfs, streamHeadState, newHeaderCallback) {
+	constructor(id, ipfs, streamHeadState, newMessageCallback) {
 		this.id = id
 		this.ipfs = ipfs
 		// tracks which messages have been delivered to user
@@ -25,30 +25,34 @@ class Subscription {
 		this.getHead = () => {
 			return streamHeadState.getHeadForStream(this.id)
 		}
-		this.newHeaderCallback = newHeaderCallback
 		this.cache = new MessageHeaderCache(ipfs)
 
 		// need this b/c this function will be called by warehouse
 		// which will have it's this not this class' this
+		this.start = this.start.bind(this)
+		this.end = this.end.bind(this)
 		this.processMessageHeader = this.processMessageHeader.bind(this)
 		this.recursiveFetchHeader = this.recursiveFetchHeader.bind(this)
 		this.warehouse = new MessageHeaderWarehouse(this.processMessageHeader)
+		this.headerMessageResolver = new HeaderMessageResolver(this.ipfs, newMessageCallback)
 		
 		this.iterationLimit = ITERATION_LIMIT
 	}
 
 	start() {
-		return this.ipfs.pubsub.subscribe(this.id, (pubsubMessage) => {
+		// function that pubsub will call on new messages
+		this.pubsubMessageReceiver = (pubsubMessage) => {
 			const header = this.decodePubsubMessage(pubsubMessage)
 			this.warehouse.addMessageHeader(header)
 			this.cache.addMessageHeader(header.multihash, header)
-		})
+		}
+		return this.ipfs.pubsub.subscribe(this.id, this.pubsubMessageReceiver)
 	}
 
 	// TODO: is this the right way to unsubscribe?
 	// Why does unsubscribe need a ref to ipfsHandler?
 	end() {
-		this.ipfs.pubsub.unsubscribe(this.id, ipfsHandler)
+		this.ipfs.pubsub.unsubscribe(this.id, this.pubsubMessageReceiver)
 		log.info(`${MODULE_NAME}: ${self.identity.id} unsubscribed from ${hash}`)
 	}
 
@@ -97,7 +101,7 @@ class Subscription {
 					this.cache.deleteMessageHeader(header.multihash)
 					return this.setHead(header)
 						.then(() => {
-							this.newHeaderCallback(header)
+							this.headerMessageResolver.deliverMessageForHeader(header)
 							return Promise.resolve(null)
 						})
 				}
@@ -110,7 +114,7 @@ class Subscription {
 					.then((deliveryQueue) => {
 						R.forEach((_header) => {
 							this.cache.deleteMessageHeader(_header.multihash)
-							this.newHeaderCallback(_header)
+							this.headerMessageResolver.deliverMessageForHeader(_header)
 						}, deliveryQueue)
 						return Promise.resolve(null)
 					})
@@ -120,7 +124,6 @@ class Subscription {
 	decodePubsubMessage(pubsubMessage) {
 		return JSON.parse(pubsubMessage.data.toString())
 	}
-
 }
 
 module.exports = Subscription

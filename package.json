@@ -40,7 +40,8 @@
     "ipfs": "ipfs/js-ipfs#9371b67d2c1880947fccaf264ef19e5e0a7b2575",
     "nedb": "^1.8.0",
     "p-queue": "0.2.0",
-    "ramda": "0.22.1"
+    "ramda": "0.22.1",
+    "stream-to-string": "^1.1.0"
   },
   "devDependencies": {
     "fs-pull-blob-store": "0.4.1",

@@ -6,7 +6,7 @@ const PQueue = require('p-queue')
 const promisifyIPFS = require('./utils/promisify-ipfs')
 const log = require('./utils/log')
 const publish = require('./publish')
-const SubscriptionManager = require('./subscribe/subscription-manager')
+const SubscriptionManager = require('./subscribe/subscriptions-manager')
 const State = require('./local-state').StreamHead
 
 const MODULE_NAME = 'NODE'

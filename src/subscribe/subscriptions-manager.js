@@ -1,5 +1,5 @@
 const R = require('ramda')
-const log = require('./utils/log')
+const log = require('../utils/log')
 const Subscription = require('./subscription')
 
 /**
@@ -9,7 +9,6 @@ const Subscription = require('./subscription')
  */
 
 const MODULE_NAME = 'SUBSCRIPTIONS'
-module.exports = exports
 
 class SubscriptionsManager {
   constructor(node) {
@@ -42,3 +41,5 @@ class SubscriptionsManager {
     this.subscriptions.delete(id)
   }
 }
+
+module.exports = SubscriptionsManager
