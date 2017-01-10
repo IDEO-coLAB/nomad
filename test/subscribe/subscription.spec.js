@@ -10,7 +10,7 @@ const MessageSequenceCheck = require('../utils/message-sequence-check')
 
 const HASH_ENCODING = { enc: 'base58' }
 
-describe('subscribe:', () => {
+describe.only('subscribe:', () => {
   describe('single node:', () => {
     let publisher
     let subscription
