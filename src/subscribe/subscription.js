@@ -1,4 +1,5 @@
 const R = require('ramda')
+
 const MessageHeaderCache = require('../local-state').MessageHeaderCache
 const MessageHeaderWarehouse = require('./message-header-warehouse')
 const HeaderMessageResolver = require('./header-message-resolver')
@@ -7,7 +8,7 @@ const HeaderMessageResolver = require('./header-message-resolver')
 // older messages not yet delivered up to this many
 const ITERATION_LIMIT = 1000000
 
-// TODO: 
+// TODO:
 // - need to map message headers to full message
 // - logging info and errors
 // - stash callback function so we can give it back to ipfs when we disconnect
@@ -15,34 +16,29 @@ const ITERATION_LIMIT = 1000000
 // new header callback.
 
 class Subscription {
-	constructor(id, ipfs, streamHeadState, newMessageCallback) {
+	constructor (id, ipfs, streamHeadState, newMessageCallback) {
 		this.id = id
 		this.ipfs = ipfs
-		// tracks which messages have been delivered to user
-		this.setHead = (obj) => {
-			return streamHeadState.setHeadForStream(this.id, obj)
-		}
-		this.getHead = () => {
-			return streamHeadState.getHeadForStream(this.id)
-		}
-		this.cache = new MessageHeaderCache(ipfs)
-
-		// need this b/c this function will be called by warehouse
-		// which will have it's this not this class' this
-		this.start = this.start.bind(this)
-		this.end = this.end.bind(this)
-		this.processMessageHeader = this.processMessageHeader.bind(this)
-		this.recursiveFetchHeader = this.recursiveFetchHeader.bind(this)
-		this.warehouse = new MessageHeaderWarehouse(this.processMessageHeader)
-		this.headerMessageResolver = new HeaderMessageResolver(this.ipfs, newMessageCallback)
-		
+		this.streamHeadState = streamHeadState
 		this.iterationLimit = ITERATION_LIMIT
+
+		// Set this when the subscription starts
+		this.pubsubMessageReceiver = null
+
+		// Message-header and message-header-work stores
+		this.cache = new MessageHeaderCache(ipfs)
+		this.warehouse = new MessageHeaderWarehouse(this)
+
+		// Find and make sense of on-network messages
+		this.headerMessageResolver = new HeaderMessageResolver(this.ipfs, newMessageCallback)
 	}
 
-	start() {
-		// function that pubsub will call on new messages
+	start () {
+		// function that pubsub will call on new messages - we need to keep a handle
+		// on it to remove it when unsubscribing
 		this.pubsubMessageReceiver = (pubsubMessage) => {
 			const header = this.decodePubsubMessage(pubsubMessage)
+			console.log('HEADER: ', header)
 			this.warehouse.addMessageHeader(header)
 			this.cache.addMessageHeader(header.multihash, header)
 		}
@@ -51,12 +47,21 @@ class Subscription {
 
 	// TODO: is this the right way to unsubscribe?
 	// Why does unsubscribe need a ref to ipfsHandler?
-	end() {
+	stop () {
 		this.ipfs.pubsub.unsubscribe(this.id, this.pubsubMessageReceiver)
-		log.info(`${MODULE_NAME}: ${self.identity.id} unsubscribed from ${hash}`)
+		log.info(`${MODULE_NAME}: Unsubscribed from ${this.id}`)
 	}
 
-	recursiveFetchHeader(header, lastDeliveredHeader, deliveryQueue) {	
+	// tracks which messages have been delivered to user
+	setHead (obj) {
+		return this.streamHeadState.setHeadForStream(this.id, obj)
+	}
+
+	getHead () {
+		return this.streamHeadState.getHeadForStream(this.id)
+	}
+
+	recursiveFetchHeader (header, lastDeliveredHeader, deliveryQueue) {
 		// base cases, end recursion
 		// too many iterations
 		if (deliveryQueue.length > this.iterationLimit) {
@@ -84,7 +89,7 @@ class Subscription {
 			})
 	}
 
-	processMessageHeader(header) {
+	processMessageHeader (header) {
 		return this.getHead()
 			.then((lastDeliveredHeader) => {
 				if (lastDeliveredHeader && lastDeliveredHeader.data.idx >= header.data.idx) {
@@ -121,7 +126,7 @@ class Subscription {
 			})
 	}
 
-	decodePubsubMessage(pubsubMessage) {
+	decodePubsubMessage (pubsubMessage) {
 		return JSON.parse(pubsubMessage.data.toString())
 	}
 }

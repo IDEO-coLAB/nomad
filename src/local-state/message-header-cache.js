@@ -6,6 +6,7 @@
 
  // Currently assuming that this doesn't need to be persisted to disk, only needs to be in memory
  // TODO: should we be using Maps. What about browser compatability?
+ // Think we're ok on compat: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
 
  class MessageHeaderCache {
   constructor (ipfs) {
@@ -18,15 +19,15 @@
    */
   getMessageHeader(hash) {
   	const header = this.map[hash]
-  	if (header) { 
-      return Promise.resolve(header) 
+  	if (header) {
+      return Promise.resolve(header)
     }
 
   	return this.ipfs.object.data(hash, { enc: 'base58' })
     	.then((data) => {
     		const obj = JSON.parse(data)
 	      return Promise.resolve(obj)
-    })	
+    })
   }
 
   deleteMessageHeader(hash) {

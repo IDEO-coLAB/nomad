@@ -33,7 +33,7 @@ class SubscriptionsManager {
   /**
    * Exposed unsubscribe API
    *
-   * @param {id} peer ID of the subscription 
+   * @param {id} peer ID of the subscription
    */
   unsubscribe(id) {
     const subscription = this.subscriptions.get(id)

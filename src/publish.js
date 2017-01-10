@@ -2,8 +2,8 @@ const log = require('./utils/log')
 
 /**
  * TODO:
- * - possibly: local-state should store entire DAG objects to avoid ipfs lookups
  * - make broadcastAndStore 'atomic' even at a basic level
+ * - move to same abstraction pattern as subscribe manager
  */
 
 const MODULE_NAME = 'PUBLISH'

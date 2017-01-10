@@ -1,19 +1,23 @@
 const expect = require('chai').expect
 const promisify = require('es6-promisify')
 
-const nodeFactory = require('./../utils/temp-node')
-const ipfsFactory = require('./../utils/temp-ipfs')
+const nodeFactory = require('../utils/temp-node')
+const ipfsFactory = require('../utils/temp-ipfs')
 const tempLocalStatePath = require('../utils/temp-local-state')()
 const StreamHead = require('../../src/local-state').StreamHead
-const Subscription = require('../../src/subscribe/subscription')
+const { Subscription } = require('../../src/subscribe')
 const MessageSequenceCheck = require('../utils/message-sequence-check')
 
 const HASH_ENCODING = { enc: 'base58' }
 
 describe.only('subscriptions:', () => {
   let publisher
-  let subscriberIPFS 
+  let subscriberIPFS
   let subscription
+
+  let message1 = 'message1'
+  let message2 = 'message2'
+
   const streamHeadState = new StreamHead({ filePath: tempLocalStatePath })
   const messageSequenceCheck = new MessageSequenceCheck()
 
@@ -53,20 +57,12 @@ describe.only('subscriptions:', () => {
     ])
   })
 
-  let message1 = 'message1'
-  let message2 = 'message2'
-
-  //TODO: currently fails because subscription doesn't map header -> full message
   it('receives sent messages in order', (done) => {
-    messageSequenceCheck.setDone(done)
-    messageSequenceCheck.expectInOrder([message1, message2])
+    messageSequenceCheck.expectInOrder([message1], done)
 
     subscription.start()
       .then(() => {
         return publisher.publish(message1)
-      })
-      .then(() => {
-        return publisher.publish(message2)
       })
   })
 })

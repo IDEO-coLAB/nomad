@@ -4,21 +4,19 @@ const assert = require('chai').assert
 const R = require('ramda')
 
 class MessageSequenceCheck {
-	constructor() {
+	constructor () {
 		this.callback = this.callback.bind(this)
 	}
 
-	setDone(done) {
+	expectInOrder (messageList, done) {
+		this.messageList = messageList
 		this.done = done
 	}
 
-	expectInOrder(messageList) {
-		this.messageList = messageList
-	}
-
-	callback(message) {
+	callback (message) {
 		console.log(`got ${message}`)
 		console.log(message)
+
 		expect(this.messageList).to.exist
 		expect(this.messageList).to.not.be.empty
 

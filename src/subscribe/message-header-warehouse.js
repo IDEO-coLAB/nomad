@@ -10,15 +10,15 @@
 
  class MessageHeaderWarehouse {
   /**
-   * @param {function} new message handler. Handler takes arguments (publisher id, hash, message) and returns 
+   * @param {function} new message handler. Handler takes arguments (publisher id, hash, message) and returns
    * a promise that resolves when the message has been delivered to the users callback.
    */
-  constructor (handler) {
-    this.handler = handler
+  constructor (subscription) {
+    this.handler = subscription.processMessageHeader.bind(subscription)
     this.queue = new PQueue({concurrency: 1})
   }
 
-  addMessageHeader(messageHeader) {
+  addMessageHeader (messageHeader) {
     this.queue.add(() => {
       // handler needs to be promise returning
       return this.handler(messageHeader)

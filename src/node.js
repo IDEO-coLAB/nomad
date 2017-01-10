@@ -6,7 +6,7 @@ const PQueue = require('p-queue')
 const promisifyIPFS = require('./utils/promisify-ipfs')
 const log = require('./utils/log')
 const publish = require('./publish')
-const SubscriptionManager = require('./subscribe/subscriptions-manager')
+const { SubscriptionsManager } = require('./subscribe')
 const State = require('./local-state').StreamHead
 
 const MODULE_NAME = 'NODE'
@@ -41,7 +41,7 @@ module.exports = class Node {
     this._ipfs = promisifyIPFS(new IPFS(config.repo))
 
     this._publish = publish(this)
-    this._subscriptionManager = new SubscriptionManager(this)
+    this._subscriptionsManager = new SubscriptionsManager(this)
 
     this.identity = null
     // TODO: figure out the naming and api here, this is an initial job for tests
@@ -121,7 +121,7 @@ module.exports = class Node {
 
     ids.filter((id) => !this.subscriptions.has(id))
       .forEach((id) => {
-        this.subscriptionManager.subscribe(id, handler)
+        this.subscriptionsManager.subscribe(id, handler)
       })
   }
 
@@ -133,6 +133,6 @@ module.exports = class Node {
    */
   unsubscribe (id) {
     log.info(`${MODULE_NAME}: ${this.identity.id} unsubscribe from ${id}`)
-    this.subscriptionManager.unsubscribe(id)
+    this.subscriptionsManager.unsubscribe(id)
   }
 }
