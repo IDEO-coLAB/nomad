@@ -5,11 +5,15 @@
  * order that headers are delivered to this object.
  */
 
- const R = require('ramda')
- const PQueue = require('p-queue')
- const streamToString = require('stream-to-string')
+const R = require('ramda')
+const PQueue = require('p-queue')
+const streamToString = require('stream-to-string')
 
- class HeaderMessageResolver {
+const log = require('../utils/log')
+
+const MODULE_NAME = 'MSG_HEADER_RESOLVER'
+
+class HeaderMessageResolver {
   /**
    * @param {function} new message handler.
    */
@@ -17,32 +21,28 @@
     this.ipfs = ipfs
     this.handler = handler
     this.queue = new PQueue({concurrency: 1})
-
-    this.deliverMessageForHeader = this.deliverMessageForHeader
-    this.fetchAndDeliver = this.fetchAndDeliver
   }
 
-  fetchAndDeliver(header) {
+  fetchAndDeliver (header) {
     const dataHash = (R.find(R.propEq('name', 'data'))(header.links)).multihash
-    // console.log(this)
-    // console.log('===========================================================\n\n\n')
-    // console.warn('fetchAndDeliver - header', header)
-    // console.warn('fetchAndDeliver - dataHash', dataHash)
+    log.info(`${MODULE_NAME}: Attempting delivery of ${dataHash}...`)
+
     return this.ipfs.files.cat(dataHash)
       .then((stream) => {
         return streamToString(stream)
       })
       .then((message) => {
         this.handler(message)
+        log.info(`${MODULE_NAME}: Delivered ${dataHash}`)
         return Promise.resolve(null)
       })
   }
 
-  deliverMessageForHeader(header) {
+  deliverMessageForHeader (header) {
     this.queue.add(() => {
-      // console.warn('deliverMessageForHeader - header', header)
       return this.fetchAndDeliver(header)
     })
+    .catch(console.log)
   }
 }
 

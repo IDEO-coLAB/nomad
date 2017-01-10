@@ -1,5 +1,7 @@
 const R = require('ramda')
+
 const log = require('../utils/log')
+
 const Subscription = require('./subscription')
 
 /**
@@ -8,7 +10,7 @@ const Subscription = require('./subscription')
  * - Error handling on subscribe receive fails...
  */
 
-const MODULE_NAME = 'SUBSCRIPTIONS'
+const MODULE_NAME = 'SUBSCRIPTIONS_MANAGER'
 
 class SubscriptionsManager {
   constructor(node) {
@@ -28,6 +30,7 @@ class SubscriptionsManager {
     const subscription  = new Subscription(id, this.node._ipfs, this.node.heads, handler)
     subscription.start()
     this.subscriptions.set(id, subscription)
+    log.info(`${MODULE_NAME}: Subscribed to ${id}`)
   }
 
   /**
@@ -39,6 +42,7 @@ class SubscriptionsManager {
     const subscription = this.subscriptions.get(id)
     subscription.end()
     this.subscriptions.delete(id)
+    log.info(`${MODULE_NAME}: Unsubscribed from ${id}`)
   }
 }
 

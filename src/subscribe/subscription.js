@@ -1,12 +1,9 @@
 const R = require('ramda')
 
+const log = require('../utils/log')
 const MessageHeaderCache = require('../local-state').MessageHeaderCache
 const MessageHeaderWarehouse = require('./message-header-warehouse')
 const HeaderMessageResolver = require('./header-message-resolver')
-
-// when a new header comes in, follow prev links and deliver
-// older messages not yet delivered up to this many
-const ITERATION_LIMIT = 1000000
 
 // TODO:
 // - need to map message headers to full message
@@ -14,6 +11,12 @@ const ITERATION_LIMIT = 1000000
 // - stash callback function so we can give it back to ipfs when we disconnect
 // - change constructor to accept user new message callback not
 // new header callback.
+
+// when a new header comes in, follow prev links and deliver
+// older messages not yet delivered up to this many
+const ITERATION_LIMIT = 1000000
+
+const MODULE_NAME = 'SUBSCRIPTION'
 
 class Subscription {
 	constructor (id, ipfs, streamHeadState, newMessageCallback) {
@@ -38,7 +41,6 @@ class Subscription {
 		// on it to remove it when unsubscribing
 		this.pubsubMessageReceiver = (pubsubMessage) => {
 			const header = this.decodePubsubMessage(pubsubMessage)
-			console.log('HEADER: ', header)
 			this.warehouse.addMessageHeader(header)
 			this.cache.addMessageHeader(header.multihash, header)
 		}
@@ -62,27 +64,33 @@ class Subscription {
 	}
 
 	recursiveFetchHeader (header, lastDeliveredHeader, deliveryQueue) {
-		// base cases, end recursion
-		// too many iterations
+		log.info(`${MODULE_NAME}: Recursively fetching header`)
+
+		// Base case: surpased max iterations
 		if (deliveryQueue.length > this.iterationLimit) {
+			log.warn(`${MODULE_NAME}: Reached iteration limit (${this.iterationLimit})`)
 			return Promise.resolve(deliveryQueue)
 		}
 
-		// no more previous headers that we haven't processed
-		if (header.multihash === lastDeliveredHeader.multihash) {
-			return Promise.resolve(deliveryQueue)
-		}
-
-		// header is new so add to queue
+		// The header is new, add it to the delivery queue
 		const prepended = R.prepend(header, deliveryQueue)
+		log.info(`${MODULE_NAME}: Adding ${header.multihash} to the delivery queue`)
 
-		// header is a new root message
+		// Base case: the header is a new root message
 		const prevHeaderLinkObj = (R.find(R.propEq('name', 'prev'))(header.links))
 		if (R.isNil(prevHeaderLinkObj)) {
+			log.info(`${MODULE_NAME}: ${header.multihash} is a new root`)
+			return Promise.resolve(prepended)
+		}
+
+		// Base case: we already processed/delivered the new header's link object's 'prev' link
+		if (prevHeaderLinkObj.multihash === lastDeliveredHeader.multihash) {
+			log.info(`${MODULE_NAME}: Already delivered ${header.multihash}'s previous link`)
 			return Promise.resolve(prepended)
 		}
 
 		// this will fetch from the cache or network as needed
+		log.info(`${MODULE_NAME}: Recursing into ${prevHeaderLinkObj.multihash}`)
 		return this.cache.getMessageHeader(prevHeaderLinkObj.multihash)
 			.then((prevHeader) => {
 				return this.recursiveFetchHeader(prevHeader, lastDeliveredHeader, prepended)
@@ -92,18 +100,18 @@ class Subscription {
 	processMessageHeader (header) {
 		return this.getHead()
 			.then((lastDeliveredHeader) => {
+				// Already received and delivered this header
 				if (lastDeliveredHeader && lastDeliveredHeader.data.idx >= header.data.idx) {
-					// we've seen this message before
 					// delete from the cache because we're dealing with it
+					log.info(`${MODULE_NAME}: Previously received ${header.multihash} - skipping delivery`)
 					this.cache.deleteMessageHeader(header.multihash)
 					return Promise.resolve(null)
 				}
 
-				// haven't seen this header before
+				// We have no header in the cache, this is a new root (a node's first message)
 				if (R.isNil(lastDeliveredHeader)) {
-					// this is a new subscription for this node and this is first message
+					log.info(`${MODULE_NAME}: ${header.multihash} is a new root`)
 					// don't fetch previous messages, just deliver this one
-					this.cache.deleteMessageHeader(header.multihash)
 					return this.setHead(header)
 						.then(() => {
 							this.headerMessageResolver.deliverMessageForHeader(header)
@@ -112,15 +120,18 @@ class Subscription {
 				}
 
 				// fetch messages between lastDeliveredHeader through header and deliver
+				log.info(`${MODULE_NAME}: New header (${header.multihash}) is out of sync with last delivered header (${lastDeliveredHeader.multihash})`)
 				return this.setHead(header)
 					.then(() => {
 						return this.recursiveFetchHeader(header, lastDeliveredHeader, [])
 					})
 					.then((deliveryQueue) => {
+						log.info(`${MODULE_NAME}: Attempting delivery of (${R.length(deliveryQueue)} messages...`)
 						R.forEach((_header) => {
 							this.cache.deleteMessageHeader(_header.multihash)
 							this.headerMessageResolver.deliverMessageForHeader(_header)
 						}, deliveryQueue)
+						log.info(`${MODULE_NAME}: Delivered ${R.length(deliveryQueue)} messages`)
 						return Promise.resolve(null)
 					})
 			})
