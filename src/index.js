@@ -1,3 +1,3 @@
-const Node = require('./node')
+const Nomad = require('./node')
 
-module.exports = Node
+module.exports = Nomad

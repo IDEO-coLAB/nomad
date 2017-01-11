@@ -4,3 +4,5 @@ npm*.debug
 
 # Ignore test repos
 test/utils/test-*
+
+.DS_Store
