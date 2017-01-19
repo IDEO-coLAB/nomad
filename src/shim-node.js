@@ -1,11 +1,20 @@
-const _ = require('underscore')
+// const _ = require('underscore')
 const fetch = require('isomorphic-fetch')
-const Node = require('./node')
-const log = require('./utils/log')
 const path = require('path')
+const PeerInfo = require('peer-info')
+const PeerId = require('peer-id')
 const promisify = require('es6-promisify')
 
+const Node = require('./node')
+const log = require('./utils/log')
+
 const MODULE_NAME = 'SHIM-NODE'
+
+const PROTOCOL_FLOODSUB = '/floodsub/1.0.0'
+
+const SHIM_HOST = 'http://10.2.2.106:8000'
+const SHIM_POST = `${SHIM_HOST}/connect`
+const SHIM_GET = `${SHIM_HOST}/connect`
 
 const DEFAULT_CONFIG = {
   db: `${path.resolve(__dirname)}/.nomad-store`,
@@ -13,15 +22,12 @@ const DEFAULT_CONFIG = {
   ipfs: { emptyRepo: true, bits: 2048 }
 }
 
-const SHIM_HOST = 'http://10.2.4.186:8000'
-const SHIM_POST = `${SHIM_HOST}/connect`
-const SHIM_GET = `${SHIM_HOST}/connect`
-
 module.exports = class ShimNode extends Node {
   // Overrides of Node methods
   constructor (config = DEFAULT_CONFIG) {
     super(config)
-    this.postShimServer = _.throttle(this.postShimServer, 10000)
+    // track if the node had registered itself with the shim server
+    this.registered = false
   }
 
   stop () {
@@ -30,8 +36,11 @@ module.exports = class ShimNode extends Node {
   }
 
   publish (data) {
-    this.postShimServer()
-    return super.publish(data)
+    if (this.registered) {
+      return super.publish(data)
+    }
+    return this.postShimServer()
+      .then(() => super.publish(data))
   }
 
   subscribe (ids, handler) {
@@ -49,56 +58,48 @@ module.exports = class ShimNode extends Node {
     // super.subscribe(ids, handler)
   }
 
-  // ShimNode only methods
+  // Shim only methods
 
   dial(peerId) {
     return this.getShimServer(peerId)
       .then(peerInfo => {
-        console.log(`got ${peerInfo}`)
-        const _dial = promisify(this._ipfs._libp2pNode.swarm.dial)
-        debugger
-        return _dial(peerInfo, '/floodsub/1.0.0')
+        const dialP = promisify(this._ipfs._libp2pNode.swarm.dial)
+        return dialP(peerInfo, PROTOCOL_FLOODSUB)
       })
   }
 
   postShimServer() {
-    setTimeout(() => {
-      this._ipfs.swarm.localAddrs()
-        .then((obj) => {
-          debugger
-        })
-      }, 10000)
-    
-    // const thisPeerInfo = this._ipfs._libp2pNode.peerInfo
-    console.log(thisPeerInfo)
+    const peerInfo = this._ipfs._libp2pNode.peerInfo
+    const body = {
+      id: peerInfo.id.toB58String(),
+      multiaddrs: peerInfo.multiaddrs.map((mAddr) => mAddr.toString())
+    }
+
     return fetch(SHIM_POST, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(thisPeerInfo)
-    }).catch(err => {
-      console.log(err)
-      log.err(err)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+    .then((data) => {
+      this.registered = true  // flip the registration flag
+      return data
     })
   }
 
-  // returns peerInfo object
   getShimServer(peerId) {
-    const url = `${SHIM_GET}?id=${peerId}`
-    console.log(url)
-    return fetch(url, {
+    const getUrl = `${SHIM_GET}?id=${peerId}`
+
+    return fetch(getUrl, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     })
-    .then(response => {
-      return response.json()
-    })
-    .catch(err => {
-      console.log(err)
-      log.err(err)
+    .then(response => response.json())
+    .then((storedPeerInfo) => {
+      const peerId = new PeerId(new Buffer(storedPeerInfo.id))
+      const peerInfo = new PeerInfo(peerId)
+      // add multiaddrs to the peer
+      storedPeerInfo.multiaddrs.map((mAddr) => peerInfo.multiaddr.add(mAddr))
+      return peerInfo
     })
   }
 }

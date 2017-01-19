@@ -32,14 +32,14 @@ module.exports = {
               throw err
             }
 
-            config.Addresses = {
-              Swarm: [
-                `/ip4/127.0.0.1/tcp/11${offset}`,    // default was ../tcp/10..
-                `/ip4/127.0.0.1/tcp/21${offset}/ws`  // default was ../tcp/20..
-              ],
-              API: `/ip4/127.0.0.1/tcp/31${offset}`,
-              Gateway: `/ip4/127.0.0.1/tcp/32${offset}`
-            }
+            // config.Addresses = {
+            //   Swarm: [
+            //     `/ip4/127.0.0.1/tcp/11${offset}`,    // default was ../tcp/10..
+            //     `/ip4/127.0.0.1/tcp/21${offset}/ws`  // default was ../tcp/20..
+            //   ],
+            //   API: `/ip4/127.0.0.1/tcp/31${offset}`,
+            //   Gateway: `/ip4/127.0.0.1/tcp/32${offset}`
+            // }
 
             config.Discovery.MDNS.Enabled = false
 

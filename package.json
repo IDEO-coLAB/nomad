@@ -41,8 +41,8 @@
     "isomorphic-fetch": "^2.2.1",
     "nedb": "^1.8.0",
     "p-queue": "0.2.0",
-    "peer-id": "^0.8.1",
-    "peer-info": "^0.8.2",
+    "peer-id": "0.8.1",
+    "peer-info": "0.8.2",
     "ramda": "0.22.1",
     "stream-to-string": "^1.1.0"
   },
