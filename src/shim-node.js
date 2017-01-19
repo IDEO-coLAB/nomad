@@ -53,6 +53,12 @@ module.exports = class ShimNode extends Node {
         // Note: attempt.value comes from the dial function of this Shim-node
         const dialed = attemptedDials.filter((attempt) => attempt.value !== null)
         log.info(`${MODULE_NAME}: ${dialed.length} of ${potentialDials.length} possible connections dialed`)
+
+        // setTimeout(() => {
+        //   super.subscribe(ids, handler)
+        // }, 2000)
+
+        super.subscribe(ids, handler)
       })
   }
 
@@ -80,6 +86,7 @@ module.exports = class ShimNode extends Node {
         log.info(`${MODULE_NAME}: Dialing ${peerInfo.id.toB58String()}`)
 
         const dialP = promisify(this._ipfs._libp2pNode.swarm.dial)
+        // const dialP = promisify(this._ipfs._libp2pNode.dialByPeerInfo)
         return dialP(peerInfo, PROTOCOL_FLOODSUB)
       })
   }
@@ -124,6 +131,9 @@ module.exports = class ShimNode extends Node {
       const peerInfo = new PeerInfo(peerIdObj)
       // add multiaddrs to the peer
       storedPeerInfo.multiaddrs.map((mAddr) => peerInfo.multiaddr.add(mAddr))
+
+      console.log('GOT FROM SHIM SERVER:', JSON.stringify(peerInfo))
+
       return peerInfo
     })
   }

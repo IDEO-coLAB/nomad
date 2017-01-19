@@ -90,6 +90,7 @@ class Subscription {
 	}
 
 	processMessageHeader (header) {
+		console.log('GOT HEADER:', header)
 		return this.getHead()
 			.then((lastDeliveredHeader) => {
 				if (lastDeliveredHeader && lastDeliveredHeader.data.idx >= header.data.idx) {
