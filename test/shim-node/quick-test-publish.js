@@ -7,15 +7,22 @@ nodeFactory.create(0)
 		return node.startWithOffset()
 	})
 	.then(() => {
+		console.log('about to post')
 		return node.postShimServer()
 	})
-	.then(() => {
-		return node.getShimServer(node.identity.id)
+	// .then(() => {
+	// 	console.log('about to get')
+	// 	return node.getShimServer(node.identity.id)
+	// 	// return node.getShimServer('node.identity.id')
+	// })
+	.then((info) => {
+		return node.dial(node.identity.id)
 	})
-	.then((reply) => {
-		console.log(reply)
+	.then((info) => {
+		console.log('HEY we dialed successfully', info)
 	})
 	.catch(err => {
-		console.log(`err: ${err}`)
+		console.log(`HEYOOO err: ${err}`)
+		console.log(err.stack)
 	})
 
