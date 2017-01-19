@@ -38,8 +38,11 @@
     "eslint-config-airbnb-base": "8.0.0",
     "eslint-plugin-import": "1.16.0",
     "ipfs": "ipfs/js-ipfs#9371b67d2c1880947fccaf264ef19e5e0a7b2575",
+    "isomorphic-fetch": "^2.2.1",
     "nedb": "^1.8.0",
     "p-queue": "0.2.0",
+    "peer-id": "^0.8.1",
+    "peer-info": "^0.8.2",
     "ramda": "0.22.1",
     "stream-to-string": "^1.1.0"
   },

@@ -20,11 +20,12 @@ const queue = new PQueue({concurrency: 1})
  * - API call to get list of subscription ids.
  */
 
-const DEFAULT_CONFIG = {
-  db: `${path.resolve(__dirname)}/.nomad-store`,
-  repo: `${path.resolve(__dirname)}/.ipfs-store`,
-  ipfs: { emptyRepo: true, bits: 2048 }
-}
+// temporarily moved to ShimNode
+// const DEFAULT_CONFIG = {
+//   db: `${path.resolve(__dirname)}/.nomad-store`,
+//   repo: `${path.resolve(__dirname)}/.ipfs-store`,
+//   ipfs: { emptyRepo: true, bits: 2048 }
+// }
 
 /**
  * Class: Node
