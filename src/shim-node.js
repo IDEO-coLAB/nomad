@@ -3,6 +3,7 @@ const fetch = require('isomorphic-fetch')
 const Node = require('./node')
 const log = require('./utils/log')
 const path = require('path')
+const promisify = require('es6-promisify')
 
 const MODULE_NAME = 'SHIM-NODE'
 
@@ -12,7 +13,9 @@ const DEFAULT_CONFIG = {
   ipfs: { emptyRepo: true, bits: 2048 }
 }
 
-const SHIM_URL = 'http://10.2.4.186:8000/conn'
+const SHIM_HOST = 'http://10.2.4.186:8000'
+const SHIM_POST = `${SHIM_HOST}/connect`
+const SHIM_GET = `${SHIM_HOST}/connect`
 
 module.exports = class ShimNode extends Node {
   // Overrides of Node methods
@@ -32,22 +35,68 @@ module.exports = class ShimNode extends Node {
   }
 
   subscribe (ids, handler) {
+    const id = ids[0]
+    this.dial(id)
+    .then(() => {
+      debugger
+    })
+    .catch(err => {
+      console.log(`err: ${err}`)
+    })
+
+
     // get peer info from shim server and dial peer
-    super.subscribe(ids, handler)
+    // super.subscribe(ids, handler)
   }
 
   // ShimNode only methods
 
+  dial(peerId) {
+    return this.getShimServer(peerId)
+      .then(peerInfo => {
+        console.log(`got ${peerInfo}`)
+        const _dial = promisify(this._ipfs._libp2pNode.swarm.dial)
+        debugger
+        return _dial(peerInfo, '/floodsub/1.0.0')
+      })
+  }
+
   postShimServer() {
-    const thisPeerInfo = this.identity
+    setTimeout(() => {
+      this._ipfs.swarm.localAddrs()
+        .then((obj) => {
+          debugger
+        })
+      }, 10000)
+    
+    // const thisPeerInfo = this._ipfs._libp2pNode.peerInfo
     console.log(thisPeerInfo)
-    return fetch(SHIM_URL, {
+    return fetch(SHIM_POST, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(thisPeerInfo)
     }).catch(err => {
+      console.log(err)
+      log.err(err)
+    })
+  }
+
+  // returns peerInfo object
+  getShimServer(peerId) {
+    const url = `${SHIM_GET}?id=${peerId}`
+    console.log(url)
+    return fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => {
+      return response.json()
+    })
+    .catch(err => {
       console.log(err)
       log.err(err)
     })
