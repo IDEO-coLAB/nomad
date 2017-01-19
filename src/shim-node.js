@@ -1,4 +1,5 @@
-// const _ = require('underscore')
+const R = require('ramda')
+const Q = require('q')
 const fetch = require('isomorphic-fetch')
 const path = require('path')
 const PeerInfo = require('peer-info')
@@ -32,23 +33,28 @@ module.exports = class ShimNode extends Node {
   }
 
   subscribe (ids, handler) {
-    const id = ids[0]
-    this.dial(id)
-    .then(() => {
-      debugger
-    })
-    .catch(err => {
-      console.log(`err: ${err}`)
-    })
+    // ids not passed
+    if (R.isNil(ids) || typeof ids === 'function' || !R.isArrayLike(ids)) {
+      throw new Error(`'ids' must be an array`)
+    }
+    // ids empty
+    if (R.isEmpty(ids)) {
+      throw new Error(`'ids' must contain at least one id`)
+    }
+    // handler is not a function
+    if (typeof handler !== 'function') {
+      throw new Error(`'handler' must be a function`)
+    }
 
+    const potentialDials = ids.map((id) => this.dial(id))
 
-    // get peer info from shim server and dial peer
-    // super.subscribe(ids, handler)
+    Q.allSettled(potentialDials)
+      .then((attemptedDials) => {
+        // Note: attempt.value comes from the dial function of this Shim-node
+        const dialed = attemptedDials.filter((attempt) => attempt.value !== null)
+        log.info(`${MODULE_NAME}: ${dialed.length} of ${potentialDials.length} possible connections dialed`)
+      })
   }
-
-
-
-
 
   stop () {
     return this.deleteShimServer(this.identity.id)
@@ -66,6 +72,12 @@ module.exports = class ShimNode extends Node {
   dial(peerId) {
     return this.getShimServer(peerId)
       .then(peerInfo => {
+        if (!peerInfo) {
+          return null
+        }
+
+        log.info(`${MODULE_NAME}: Dialing ${peerInfo.id.toB58String()}`)
+
         const dialP = promisify(this._ipfs._libp2pNode.swarm.dial)
         return dialP(peerInfo, PROTOCOL_FLOODSUB)
       })
@@ -84,6 +96,8 @@ module.exports = class ShimNode extends Node {
       body: JSON.stringify(body)
     })
     .then((data) => {
+      log.info(`${MODULE_NAME}: POST ${body.id}`)
+
       this.registered = true  // flip the registration flag
       return data
     })
@@ -98,8 +112,15 @@ module.exports = class ShimNode extends Node {
     })
     .then(response => response.json())
     .then((storedPeerInfo) => {
-      const peerId = new PeerId(new Buffer(storedPeerInfo.id))
-      const peerInfo = new PeerInfo(peerId)
+      if (!storedPeerInfo) {
+        log.info(`${MODULE_NAME}: GET ${peerId} (No info found)`)
+        return null
+      }
+
+      log.info(`${MODULE_NAME}: GET ${peerId}`)
+
+      const peerIdObj = new PeerId(new Buffer(storedPeerInfo.id))
+      const peerInfo = new PeerInfo(peerIdObj)
       // add multiaddrs to the peer
       storedPeerInfo.multiaddrs.map((mAddr) => peerInfo.multiaddr.add(mAddr))
       return peerInfo
@@ -115,6 +136,9 @@ module.exports = class ShimNode extends Node {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     })
-    .then(response => response.json())
+    .then((response) => {
+      log.info(`${MODULE_NAME}: DELETE ${peerId}`)
+      return response.json()
+    })
   }
 }

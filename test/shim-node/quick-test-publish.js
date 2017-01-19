@@ -7,15 +7,16 @@ nodeFactory.create(0)
 		return node.startWithOffset()
 	})
 	.then(() => {
-		console.log('about to publish')
+		console.log('about to subscribe')
 		// return node.postShimServer()
-		return node.publish('this is ')
+		// stored QmbbDaWDyFjpWh258TxEiEQBEoypii8ZBmVhq5x7ijCcCg
+		return node.subscribe(['QmbbDaWDyFjpWh258TxEiEQBEoypii8ZBmVhq5x7ijCcCg'], () => {})
 	})
-	.then(() => {
-		console.log('about to stop')
-		// return node.postShimServer()
-		return node.stop()
-	})
+	// .then(() => {
+	// 	console.log('about to stop')
+	// 	// return node.postShimServer()
+	// 	return node.stop()
+	// })
 	// .then(() => {
 	// 	console.log('about to get')
 	// 	return node.getShimServer(node.identity.id)
