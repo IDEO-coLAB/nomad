@@ -13,7 +13,7 @@ const MODULE_NAME = 'SHIM-NODE'
 
 const PROTOCOL_FLOODSUB = '/floodsub/1.0.0'
 
-const SHIM_HOST = 'http://10.2.2.106:8000'
+const SHIM_HOST = 'http://10.2.4.250:8000'
 const SHIM_POST = `${SHIM_HOST}/connect`
 const SHIM_GET = `${SHIM_HOST}/connect`
 const SHIM_DELETE = `${SHIM_HOST}/connect`
@@ -62,6 +62,7 @@ module.exports = class ShimNode extends Node {
   }
 
   publish (data) {
+    console.log('publishing')
     if (this.registered) {
       return super.publish(data)
     }
