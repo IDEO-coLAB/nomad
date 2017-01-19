@@ -12,9 +12,9 @@ nodeFactory.create(0)
 		return node.publish('this is ')
 	})
 	.then(() => {
-		console.log('about to publish')
+		console.log('about to stop')
 		// return node.postShimServer()
-		return node.publish('more duasydb')
+		return node.stop()
 	})
 	// .then(() => {
 	// 	console.log('about to get')

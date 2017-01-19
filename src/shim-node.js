@@ -15,6 +15,7 @@ const PROTOCOL_FLOODSUB = '/floodsub/1.0.0'
 const SHIM_HOST = 'http://10.2.2.106:8000'
 const SHIM_POST = `${SHIM_HOST}/connect`
 const SHIM_GET = `${SHIM_HOST}/connect`
+const SHIM_DELETE = `${SHIM_HOST}/connect`
 
 const DEFAULT_CONFIG = {
   db: `${path.resolve(__dirname)}/.nomad-store`,
@@ -28,19 +29,6 @@ module.exports = class ShimNode extends Node {
     super(config)
     // track if the node had registered itself with the shim server
     this.registered = false
-  }
-
-  stop () {
-    // delete our peer from the shim server
-    return super.stop()
-  }
-
-  publish (data) {
-    if (this.registered) {
-      return super.publish(data)
-    }
-    return this.postShimServer()
-      .then(() => super.publish(data))
   }
 
   subscribe (ids, handler) {
@@ -58,7 +46,22 @@ module.exports = class ShimNode extends Node {
     // super.subscribe(ids, handler)
   }
 
-  // Shim only methods
+
+
+
+
+  stop () {
+    return this.deleteShimServer(this.identity.id)
+      .then(() => super.stop())
+  }
+
+  publish (data) {
+    if (this.registered) {
+      return super.publish(data)
+    }
+    return this.postShimServer()
+      .then(() => super.publish(data))
+  }
 
   dial(peerId) {
     return this.getShimServer(peerId)
@@ -101,5 +104,17 @@ module.exports = class ShimNode extends Node {
       storedPeerInfo.multiaddrs.map((mAddr) => peerInfo.multiaddr.add(mAddr))
       return peerInfo
     })
+  }
+
+  deleteShimServer(peerId) {
+    const peerInfo = this._ipfs._libp2pNode.peerInfo
+    const body = { id: peerInfo.id.toB58String() }
+
+    return fetch(SHIM_DELETE, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+    .then(response => response.json())
   }
 }
