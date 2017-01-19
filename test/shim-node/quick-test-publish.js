@@ -7,10 +7,23 @@ nodeFactory.create(0)
 		return node.startWithOffset()
 	})
 	.then(() => {
-		console.log('about to subscribe')
+		// console.log('about to subscribe')
 		// return node.postShimServer()
 		// stored QmbbDaWDyFjpWh258TxEiEQBEoypii8ZBmVhq5x7ijCcCg
-		return node.subscribe(['QmbbDaWDyFjpWh258TxEiEQBEoypii8ZBmVhq5x7ijCcCg'], () => {})
+
+		node.subscribe(['QmVjz4L2fW4gXPP5wwDixsh8qPS4pDzorv4EL7rKFadW9p'], (data) => {
+			console.log('rceived something', data)
+		})
+
+		setTimeout(() => {
+			console.log('--------------------------------------------')
+			console.log('swarm', node.identity.id)
+			console.log('--------------------------------------------')
+			console.log('swarm.peers', node._ipfs.swarm.peers().then(console.log))
+			console.log('--------------------------------------------')
+			console.log('swarm.addrs', node._ipfs.swarm.addrs().then(console.log))
+			console.log('--------------------------------------------')
+		}, 3000)
 	})
 	// .then(() => {
 	// 	console.log('about to stop')
@@ -25,11 +38,11 @@ nodeFactory.create(0)
 	// .then((info) => {
 	// 	return node.dial(node.identity.id)
 	// })
-	.then((info) => {
-		console.log('we have success!!', info)
-	})
-	.catch(err => {
-		console.log(`HEYOOO err: ${err}`)
-		console.log(err.stack)
-	})
+	// .then((info) => {
+	// 	console.log('we have success!!', info)
+	// })
+	// .catch(err => {
+	// 	console.log(`HEYOOO err: ${err}`)
+	// 	console.log(err.stack)
+	// })
 
