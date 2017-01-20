@@ -40,9 +40,11 @@
     "eslint-config-airbnb-base": "8.0.0",
     "eslint-plugin-import": "1.16.0",
     "ipfs": "ipfs/js-ipfs#9371b67d2c1880947fccaf264ef19e5e0a7b2575",
+    "libp2p-webrtc-star": "0.7.5",
     "nedb": "^1.8.0",
     "p-queue": "0.2.0",
     "ramda": "0.22.1",
+    "socket.io-client": "1.7.2",
     "stream-to-string": "^1.1.0"
   },
   "devDependencies": {

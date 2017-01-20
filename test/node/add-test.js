@@ -1,3 +1,4 @@
+
 const io = require('socket.io-client')
 
 const promisify = require('es6-promisify')
@@ -8,28 +9,6 @@ const WebRTCStar = require('libp2p-webrtc-star')
 const cmd = require('./../utils/cmd-runner')
 const nodeFactory = require('./../utils/temp-node')
 
-// describe('start:', () => {
-//   let node
-
-//   before(() => {
-//     return nodeFactory.create()
-//       .then((instance) => {
-//         node = instance
-//       })
-//   })
-
-//   after(() => {
-//     return node.teardown()
-//   })
-
-//   it('from offline to online', () => {
-//     return node.start().then((id) => {
-//       expect(id).to.exist
-//     })
-//   })
-// })
-
-const contentHash = 'QmVtEYBTYSn5bH6Qoc4GzkxKGgh4tYtMjCtmPRWfeyjPJn'
 
 const sioOptions = {
   transports: ['websocket'],
@@ -61,15 +40,9 @@ nodeFactory.create()
     return 123
   })
   .then(() => {
-    return node._ipfs.files.cat(contentHash)
+    return node._ipfs.files.add(new Buffer('This is some data'))
   })
   .then((data) => {
     console.log('RECEIVED: ', data)
   })
   .catch((err) => console.log('ERR: ', err))
-
-
-
-
-
-
