@@ -61,16 +61,16 @@ nodeFactory.create()
     })
     return addP('wstar', rtc)
   })
-  .then(() => {
-    const dialP = promisify(rtc.dial)
-    return dialP(`/libp2p-webrtc-star/ip4/10.2.2.162/tcp/10000/ws/ipfs/`)
-  })
-  .then(() => {
-    return node._ipfs.files.cat(contentHash)
-  })
-  .then((data) => {
-    console.log('RECEIVED: ', data)
-  })
+  // .then(() => {
+  //   const dialP = promisify(rtc.dial)
+  //   return dialP(`/libp2p-webrtc-star/ip4/10.2.2.162/tcp/10000/ws/ipfs/`)
+  // })
+  // .then(() => {
+  //   return node._ipfs.files.cat(contentHash)
+  // })
+  // .then((data) => {
+  //   console.log('RECEIVED: ', data)
+  // })
   .catch((err) => console.log('ERR: ', err))
 
 
