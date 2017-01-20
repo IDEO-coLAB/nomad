@@ -54,10 +54,6 @@ module.exports = class ShimNode extends Node {
         const dialed = attemptedDials.filter((attempt) => attempt.value !== null)
         log.info(`${MODULE_NAME}: ${dialed.length} of ${potentialDials.length} possible connections dialed`)
 
-        // setTimeout(() => {
-        //   super.subscribe(ids, handler)
-        // }, 2000)
-
         super.subscribe(ids, handler)
       })
   }
@@ -85,7 +81,6 @@ module.exports = class ShimNode extends Node {
         log.info(`${MODULE_NAME}: Dialing ${peerInfo.id.toB58String()}`)
 
         const dialP = promisify(this._ipfs._libp2pNode.swarm.dial)
-        // const dialP = promisify(this._ipfs._libp2pNode.dialByPeerInfo)
         return dialP(peerInfo, PROTOCOL_FLOODSUB)
       })
   }
@@ -126,12 +121,27 @@ module.exports = class ShimNode extends Node {
 
       log.info(`${MODULE_NAME}: GET ${peerId}`)
 
-      const peerIdObj = new PeerId(new Buffer(storedPeerInfo.id))
-      const peerInfo = new PeerInfo(peerIdObj)
+      // const peerIdObj = new PeerId(new Buffer(storedPeerInfo.id))
+      // const peerInfo = new PeerInfo(peerIdObj)
+      const peerInfo = new PeerInfo(PeerId.createFromB58String(storedPeerInfo.id))
       // add multiaddrs to the peer
-      storedPeerInfo.multiaddrs.map((mAddr) => peerInfo.multiaddr.add(mAddr))
+      // storedPeerInfo.multiaddrs.forEach((mAddr) => {
+      //   console.log('madr:', mAddr)
+      //   peerInfo.multiaddr.add(mAddr)
+      // })
+      // peerInfo.multiaddr.add('/ip4/10.2.2.164/tcp/4002')
+      // peerInfo.multiaddr.add('/ip4/10.2.2.164/tcp/4002')
 
-      console.log('GOT FROM SHIM SERVER:', JSON.stringify(peerInfo))
+      console.log(storedPeerInfo.multiaddrs[1])
+      console.log('/ip4/10.2.2.164/tcp/4002')
+      console.log('/ip4/10.2.2.164/tcp/4002' === storedPeerInfo.multiaddrs[1])
+
+      // peerInfo.multiaddr.add(storedPeerInfo.multiaddrs[0])
+      peerInfo.multiaddr.add(storedPeerInfo.multiaddrs[1])
+
+      console.log('GOT FROM SHIM SERVER:', storedPeerInfo)
+      console.log('-----------------------------------------------------')
+      console.log('NEW:', peerInfo)
 
       return peerInfo
     })

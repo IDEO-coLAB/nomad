@@ -11,7 +11,7 @@ nodeFactory.create(0)
 		// return node.postShimServer()
 		// stored QmbbDaWDyFjpWh258TxEiEQBEoypii8ZBmVhq5x7ijCcCg
 
-		node.subscribe(['QmVjz4L2fW4gXPP5wwDixsh8qPS4pDzorv4EL7rKFadW9p'], (data) => {
+		node.subscribe(['Qma2CiiFa29b7Gb3tAfjokr5cAevFdcpafvpzwNL9t2xSb'], (data) => {
 			console.log('rceived something', data)
 		})
 
