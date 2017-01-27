@@ -15,10 +15,10 @@ const multiaddr = require('multiaddr')
 const cmd = require('./../utils/cmd-runner')
 const nodeFactory = require('./../utils/temp-node-2') // note using modified factory
 
-const signalAddress = '10.2.4.150'
+const signalAddress = '138.197.196.251'
 const signalPort = '10000'
 
-const otherPeerIdHash = 'QmT9eGbyuCvwH422fGh2B3y94Zpiotn2Y5o4myVYx5mTWD'
+const otherPeerIdHash = 'QmasvbLfhz5xxKtgKhBS1R5uGtW3jZhS111TXEbcbTUEnB'
 
 const sioOptions = {
   transports: ['websocket'],

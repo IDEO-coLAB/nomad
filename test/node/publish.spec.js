@@ -14,7 +14,7 @@ const multiaddr = require('multiaddr')
 const cmd = require('./../utils/cmd-runner')
 const nodeFactory = require('./../utils/temp-node-2') // note using modified factory
 
-const signalAddress = '10.2.4.150'
+const signalAddress = '138.197.196.251'
 const signalPort = '10000'
 
 const sioOptions = {
