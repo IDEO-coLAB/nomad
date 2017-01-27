@@ -56,7 +56,8 @@ nodeFactory.create()
   })
   .then(() => {
     const id = node.identity.id
-    // node._ipfs._peerInfo.multiaddr.add(`/libp2p-webrtc-star/ip4/10.2.2.162/tcp/10000/ws/ipfs/${id}`)
+    console.log(id)
+    node._ipfs._peerInfo.multiaddr.add(`/libp2p-webrtc-star/ip4/10.2.2.162/tcp/10000/ws/ipfs/${id}`)
 
     let addP = promisify(node._ipfs._libp2pNode.swarm.transport.add)
     rtc = new WebRTCStar()
