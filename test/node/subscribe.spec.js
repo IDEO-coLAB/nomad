@@ -4,6 +4,8 @@ const io = require('socket.io-client')
 const promisify = require('es6-promisify')
 const expect = require('chai').expect
 const WebRTCStar = require('libp2p-webrtc-star')
+// dials a peer then starts subscribing
+
 
 const PeerId = require('peer-id')
 const PeerInfo = require('peer-info')
@@ -16,7 +18,7 @@ const nodeFactory = require('./../utils/temp-node-2') // note using modified fac
 const signalAddress = '10.2.4.150'
 const signalPort = '10000'
 
-const otherPeerIdHash = 'QmXsdD2qDJdviKU7H8hs9WTtN1RFfZjqKtRcesJbHUHiaq'
+const otherPeerIdHash = 'QmT9eGbyuCvwH422fGh2B3y94Zpiotn2Y5o4myVYx5mTWD'
 
 const sioOptions = {
   transports: ['websocket'],
@@ -27,7 +29,7 @@ const multiAddrString = (ip, port, peerId) => {
   return `/libp2p-webrtc-star/ip4/${ip}/tcp/${port}/ws/ipfs/${peerId}`
 }
 
-let rtc, listener
+let rtc, node
 
 nodeFactory.create(1)
   .then((instance) => {
@@ -43,12 +45,11 @@ nodeFactory.create(1)
 
      // add web rtc star transport
     rtc = new WebRTCStar()
-    // listener = rtc.createListener()
-    // listener.listen(ownAddress)
     let addP = promisify(node._ipfs._libp2pNode.swarm.transport.add)
     return addP('wstar', rtc)
   })
   .then(() => {
+    // must call listen after adding a new transport
     return promisify(node._ipfs._libp2pNode.swarm.listen())
   })
   .then(() => {
@@ -56,19 +57,23 @@ nodeFactory.create(1)
     const id = PeerId.createFromB58String(otherPeerIdHash)
     const otherPeer = new PeerInfo(id)
     const otherMultiAddressString = multiAddrString(signalAddress, signalPort, otherPeerIdHash)
-    debugger
     const otherAddress = multiaddr(otherMultiAddressString)
     otherPeer.multiaddr.add(otherAddress)
 
     return node._ipfs._libp2pNode.swarm.dial(otherPeer)
-    debugger
   })
-  // // .then(() => {
-  // //   return node._ipfs.files.cat(contentHash)
-  // // })
-  // .then((data) => {
-  //   console.log('dialed: ', data)
-  // })
+  .then(() => {
+    debugger
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        node.subscribe([otherPeerIdHash], (obj) => {
+          console.log('got a message from ', otherPeerIdHash)
+          console.log('message obj is ', obj)
+        })
+        resolve()
+      }, 5000)
+    })
+  })
   .catch((err) => console.log('ERR: ', err))
 
 

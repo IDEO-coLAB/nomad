@@ -1,153 +1,74 @@
-const expect = require('chai').expect
+// answers a peer dial, then starts publishing
+
+const io = require('socket.io-client')
+
+
 const promisify = require('es6-promisify')
+const expect = require('chai').expect
+const WebRTCStar = require('libp2p-webrtc-star')
 
-const ipfsFactory = require('./../utils/temp-ipfs')
-const nodeFactory = require('./../utils/temp-node')
+const PeerId = require('peer-id')
+const PeerInfo = require('peer-info')
+const multiaddr = require('multiaddr')
 
-const HASH_ENCODING = { enc: 'base58' }
+const cmd = require('./../utils/cmd-runner')
+const nodeFactory = require('./../utils/temp-node-2') // note using modified factory
 
-describe('publish:', () => {
-  let nodeA
-  let nodeAId
-  let ipfs
+const signalAddress = '10.2.4.150'
+const signalPort = '10000'
 
-  const ensureIpfsData = (hash, targetData) => {
-    return ipfs.object.get(hash, HASH_ENCODING)
-      .then((headDAG) => {
-        const links = headDAG.toJSON().links
-        const dataLink = links.filter((link) => {
-          return link.name === 'data'
-        })[0]
-        return ipfs.object.get(dataLink.multihash, HASH_ENCODING)
-      })
-      .then((dataDAG) => {
-        const testDataBuf = dataDAG.toJSON().data
-        // TODO: figure out a better way or the IPFS API way
-        // of deserializing a dagnode's data. This IPLD object
-        // comes with some unicode commands at the start and end
-        const deserializedBuf = testDataBuf.slice(4, testDataBuf.length-2)
-        expect(deserializedBuf).to.eql(targetData)
-      })
-  }
+const sioOptions = {
+  transports: ['websocket'],
+  'force new connection': true
+}
 
-  before(() => {
-    return Promise.all([
-        nodeFactory.create(1),
-        ipfsFactory.create(2)
-      ])
-      .then((results) => {
-        nodeA = results[0]
-        ipfs = results[1]
-        return Promise.all([
-          nodeA.startWithOffset(),
-          ipfs.start()
-        ])
-      })
-      .then(() => {
-        nodeAId = nodeA.identity.id
-        // Connect ipfs to the node - used for network data confirmation
-        ipfs.swarm.connectP = promisify(ipfs.swarm.connect)
-        return ipfs.swarm.connectP(nodeA.identity.addresses[0])
-      })
-      .then(() => {
-        // Note: Connection timing is an issue so we need to wait
-        // for the connections to open
-        return new Promise((resolve) => setTimeout(resolve, 1200))
-      })
+const multiAddrString = (ip, port, peerId) => {
+  return `/libp2p-webrtc-star/ip4/${ip}/tcp/${port}/ws/ipfs/${peerId}`
+}
+
+let rtc, node
+
+nodeFactory.create(0)
+  .then((instance) => {
+    node = instance
+    return node.startWithOffset()
   })
+  .then(() => {
+    // add multiaddress with signaling server to our peer id
+    const ownAddress = multiaddr(multiAddrString(signalAddress, signalPort, node.identity.id))
+    node._ipfs._libp2pNode.peerInfo.multiaddrs.push(ownAddress)
 
-  after(() => {
-    return Promise.all([nodeA.teardown(), ipfs.teardown()])
+    console.log('peer id is ', node.identity.id)
+
+     // add web rtc star transport
+    rtc = new WebRTCStar()
+    // listener = rtc.createListener()
+    // listener.listen(ownAddress)
+    let addP = promisify(node._ipfs._libp2pNode.swarm.transport.add)
+    return addP('wstar', rtc)
   })
-
-  it('throws without data', () => {
-    const throwerA = () => nodeA.publish()       // arg is 'undefined'
-    const throwerB = () => nodeA.publish(null)   // arg is null
-    expect(throwerA).to.throw
-    expect(throwerB).to.throw
+  .then(() => {
+    return promisify(node._ipfs._libp2pNode.swarm.listen())
   })
-
-  it('node root does not exist before first publish', () => {
-    return nodeA.heads.getHeadForStream(nodeAId)
-      .then((headDAG) => {
-        expect(headDAG).to.eql(null)
+  .then(() => {
+    setInterval(() => {
+      node.publish('gman it fucking works...')
+      .catch((err) => {
+        console.log('err', err)
       })
+    }, 2000)
   })
+  .catch((err) => console.log('ERR: ', err))
 
-  it('root is stored after first publish', () => {
-    let rootHash
-    let storedHash
 
-    const data = new Buffer('Some publishing data')
 
-    return nodeA.publish(data)
-      .then((rootDAG) => {
-        expect(rootDAG).to.exist
-        rootHash = rootDAG.multihash
-        return nodeA.heads.getHeadForStream(nodeAId)
-      })
-      .then((storedDAG) => {
-        expect(storedDAG).to.exist
-        storedHash = storedDAG.multihash
-        expect(storedHash).to.eql(rootHash)
-        return ensureIpfsData(storedHash, data)
-      })
-  })
+// setInterval(() => {
+//   const _node = node
+//   debugger
+// }, 10000)
 
-  it('staggered publishes', () => {
-    let storedHash
 
-    const dataA = new Buffer('Some more publishing data')
-    const dataB = new Buffer('Yet another publish')
 
-    return nodeA.publish(dataA)
-      .then((pubDAG) => {
-        expect(pubDAG).to.exist
-        storedHash = pubDAG.multihash
-        return nodeA.heads.getHeadForStream(nodeAId)
-      })
-      .then((storedDAG) => {
-        const fetchedHash = storedDAG.multihash
-        expect(fetchedHash).to.eql(storedHash)
-        return ensureIpfsData(fetchedHash, dataA)
-      })
-      .then(() => nodeA.publish(dataB))
-      .then((pubDAG) => {
-        expect(pubDAG).to.exist
-        storedHash = pubDAG.multihash
-        return nodeA.heads.getHeadForStream(nodeAId)
-      })
-      .then((storedDAG) => {
-        const fetchedHash = storedDAG.multihash
-        expect(fetchedHash).to.eql(storedHash)
-        return ensureIpfsData(fetchedHash, dataB)
-      })
-  })
 
-  it('rapid fire publishes', () => {
-    let storedHash
 
-    const dataA = new Buffer('Some more publishing data')
-    const dataB = new Buffer('Yet another publish')
-    const dataC = new Buffer('Yet another publish event')
-    const dataD = new Buffer('Still another publish')
-    const dataE = new Buffer('Yet another publish')
 
-    nodeA.publish(dataA)
-    nodeA.publish(dataB)
-    nodeA.publish(dataC)
-    nodeA.publish(dataD)
-
-    return nodeA.publish(dataE)
-      .then((pubDAG) => {
-        expect(pubDAG).to.exist
-        storedHash = pubDAG.multihash
-        return nodeA.heads.getHeadForStream(nodeAId)
-      })
-      .then((storedDAG) => {
-        const fetchedHash = storedDAG.multihash
-        expect(fetchedHash).to.eql(storedHash)
-        return ensureIpfsData(fetchedHash, dataE)
-      })
-  })
-})

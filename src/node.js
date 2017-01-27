@@ -119,10 +119,14 @@ module.exports = class Node {
 
     log.info(`${MODULE_NAME}: ${this.identity.id} subscribe to ${ids.join(', ')}`)
 
-    ids.filter((id) => !this.subscriptions.has(id))
-      .forEach((id) => {
-        this.subscriptionsManager.subscribe(id, handler)
-      })
+    // TODO FIXME do we still need the ids.filter? 
+    // What do we want the behavior to be when we subscribe to something already subscribed to
+    // ids.filter((id) => !this.subscriptions.has(id))
+    //   .forEach((id) => {
+    //     this.subscriptionsManager.subscribe(id, handler)
+    //   })
+
+    ids.forEach((id) => { this._subscriptionsManager.subscribe(id, handler) })
   }
 
   /**
