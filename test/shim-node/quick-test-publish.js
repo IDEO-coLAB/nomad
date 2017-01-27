@@ -25,10 +25,21 @@ nodeFactory.create(0)
 		return node.startWithOffset()
 	})
 	.then(() => {
-		console.log(node.identity.id)
-		return publishLoop()
-	})
-	.catch(err => {
-		console.log(`HEYOOO err: ${err}`)
-		console.log(err.stack)
+		// console.log('about to subscribe')
+		// return node.postShimServer()
+		// stored QmbbDaWDyFjpWh258TxEiEQBEoypii8ZBmVhq5x7ijCcCg
+
+		node.subscribe(['Qma2CiiFa29b7Gb3tAfjokr5cAevFdcpafvpzwNL9t2xSb'], (data) => {
+			console.log('rceived something', data)
+		})
+
+		setTimeout(() => {
+			console.log('--------------------------------------------')
+			console.log('swarm', node.identity.id)
+			console.log('--------------------------------------------')
+			console.log('swarm.peers', node._ipfs.swarm.peers().then(console.log))
+			console.log('--------------------------------------------')
+			console.log('swarm.addrs', node._ipfs.swarm.addrs().then(console.log))
+			console.log('--------------------------------------------')
+		}, 3000)
 	})
