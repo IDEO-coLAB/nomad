@@ -17,6 +17,7 @@ describe('start:', () => {
     return node.teardown()
   })
 
+  // FIXME: this test is kinda weird because temp-node factory starts the node.
   it('from offline to online', () => {
     return node.start().then((id) => {
       expect(id).to.exist

@@ -6,7 +6,7 @@ const leftPad = require('left-pad')
 const cmd = require('./cmd-runner')
 const createTempRepo = require('./temp-repo')
 const createTempLocalState = require('./temp-local-state')
-const Node = require('../../src/shim-node')
+const Node = require('../../src/node-shim')
 
 module.exports = {
   create: (num) => {
@@ -32,14 +32,12 @@ module.exports = {
               throw err
             }
 
-            // config.Addresses = {
-            //   Swarm: [
-            //     `/ip4/127.0.0.1/tcp/11${offset}`,    // default was ../tcp/10..
-            //     `/ip4/127.0.0.1/tcp/21${offset}/ws`  // default was ../tcp/20..
-            //   ],
-            //   API: `/ip4/127.0.0.1/tcp/31${offset}`,
-            //   Gateway: `/ip4/127.0.0.1/tcp/32${offset}`
-            // }
+             // Swarm addresses are empty because shim-node will add them for WebRTCStar transport
+            config.Addresses = {
+              Swarm: [],
+              API: `/ip4/127.0.0.1/tcp/31${offset}`,
+              Gateway: `/ip4/127.0.0.1/tcp/32${offset}`
+            }
 
             config.Discovery.MDNS.Enabled = false
 

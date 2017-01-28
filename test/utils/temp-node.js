@@ -6,7 +6,7 @@ const leftPad = require('left-pad')
 const cmd = require('./cmd-runner')
 const createTempRepo = require('./temp-repo')
 const createTempLocalState = require('./temp-local-state')
-const Node = require('../../src/node')
+const Node = require('../../src/shim-node')
 
 module.exports = {
   create: (num) => {
@@ -32,7 +32,7 @@ module.exports = {
               throw err
             }
 
-            config.Addresses = {
+           config.Addresses = {
               Swarm: [
                 `/ip4/127.0.0.1/tcp/11${offset}`,    // default was ../tcp/10..
                 `/ip4/127.0.0.1/tcp/21${offset}/ws`  // default was ../tcp/20..
