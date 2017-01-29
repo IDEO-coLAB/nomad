@@ -83,15 +83,23 @@ module.exports = class ShimNode extends Node {
     Q.allSettled(potentialDials)
       .then((attemptedDials) => {
         // Note: attempt.value comes from the dial function of this Shim-node
-        const dialed = attemptedDials.filter((attempt) => attempt.value !== null)
+        const dialed = attemptedDials.filter((attempt) => attempt.state === 'fulfilled')
         log.info(`${MODULE_NAME}: ${dialed.length} of ${potentialDials.length} possible connections dialed`)
+        console.log('dialed is', dialed)
+        const dialedPeerIds = dialed.map(obj => obj.value)
+        console.log('sending this list of peers to parent', dialedPeerIds)
 
-        super.subscribe(ids, handler)
+        super.subscribe(dialedPeerIds, handler)
+      })
+      .catch((err) => {
+        console.log('err', err)
+        log.err('err', err)
       })
   }
 
   // TODO: If target peer is offline (or nonexistent) but signaling server is up
   // I think dial will still succeed.
+  // Returns promise that resolves to peerId
   dial(peerId) {
     // build peer info for the one we're dialing
     const id = PeerId.createFromB58String(peerId)
@@ -103,7 +111,7 @@ module.exports = class ShimNode extends Node {
     const _dial = promisify(this._ipfs._libp2pNode.swarm.dial)
     return _dial(otherPeer)
       .then(() => {
-        return Promise.resolve(true)
+        return Promise.resolve(peerId)
       })
       .catch((err) => {
         log.err('err: ', err)

@@ -38,7 +38,6 @@ class Subscription {
 		// on it to remove it when unsubscribing
 		this.pubsubMessageReceiver = (pubsubMessage) => {
 			const header = this.decodePubsubMessage(pubsubMessage)
-			console.log('HEADER: ', header)
 			this.warehouse.addMessageHeader(header)
 			this.cache.addMessageHeader(header.multihash, header)
 		}
@@ -90,7 +89,6 @@ class Subscription {
 	}
 
 	processMessageHeader (header) {
-		console.log('GOT HEADER:', header)
 		return this.getHead()
 			.then((lastDeliveredHeader) => {
 				if (lastDeliveredHeader && lastDeliveredHeader.data.idx >= header.data.idx) {

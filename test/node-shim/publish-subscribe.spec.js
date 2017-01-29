@@ -53,12 +53,11 @@ describe('publish and subscribe:', () => {
     console.log('publishing id is', id)
     console.log('subscribing id is', subNode.identity.id)
     subNode.subscribe([id], (msg) => {
-      console.log('received message')
-      expect(msg.message).to.deep.equal(message)
+      expect(msg).to.deep.equal(message)
       done()
     })
-    setInterval(() => {
+    setTimeout(() => {
       pubNode.publish(message)
-    }, 3000)
+    }, 5000)
   })
 })

@@ -120,10 +120,14 @@ module.exports = class Node {
 
     log.info(`${MODULE_NAME}: ${this.identity.id} subscribe to ${ids.join(', ')}`)
 
-    ids.filter((id) => !this.subscriptions.has(id))
-      .forEach((id) => {
-        this.subscriptionsManager.subscribe(id, handler)
-      })
+    // FIXME, TODO: what behavior do we want here when resubscribing
+    // ids.filter((id) => !this.subscriptions.has(id))
+    //   .forEach((id) => {
+    //     this._subscriptionsManager.subscribe(id, handler)
+    //   })
+    ids.forEach((id) => {
+      this._subscriptionsManager.subscribe(id, handler)
+    })
   }
 
   /**
@@ -134,6 +138,6 @@ module.exports = class Node {
    */
   unsubscribe (id) {
     log.info(`${MODULE_NAME}: ${this.identity.id} unsubscribe from ${id}`)
-    this.subscriptionsManager.unsubscribe(id)
+    this._subscriptionsManager.unsubscribe(id)
   }
 }
