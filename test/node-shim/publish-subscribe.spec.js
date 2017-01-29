@@ -48,19 +48,17 @@ describe('publish and subscribe:', () => {
   })
 
   it('subscribe gets a message after publishing', (done) => {
-
-    // need to call node.start but problem is that there's duplicate work between
-    // start and the node factory startwithoffset
-
-
     const message = 'hello'
     const id = pubNode.identity.id
+    console.log('publishing id is', id)
+    console.log('subscribing id is', subNode.identity.id)
     subNode.subscribe([id], (msg) => {
+      console.log('received message')
       expect(msg.message).to.deep.equal(message)
       done()
     })
-    setTimeout(() => {
+    setInterval(() => {
       pubNode.publish(message)
-    }, 5000)
+    }, 3000)
   })
 })

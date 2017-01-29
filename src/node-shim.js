@@ -32,24 +32,29 @@ module.exports = class ShimNode extends Node {
   // Overrides of Node methods
   constructor (config = DEFAULT_CONFIG) {
     super(config)
+    this.configureWebRTCStar = this.configureWebRTCStar.bind(this)
   }
 
   start () {
     return super.start()
       .then(() => {
-        // add multiaddress with signaling server to our peer id
-        const ownAddress = multiaddr(multiAddrString(SIGNAL_SERVER_IP, SIGNAL_SERVER_PORT, this.identity.id))
-        this._ipfs._libp2pNode.peerInfo.multiaddrs.push(ownAddress)
-
-         // add web rtc star transport
-        rtc = new WebRTCStar()
-        // listener = rtc.createListener()
-        // listener.listen(ownAddress)
-        let addP = promisify(this._ipfs._libp2pNode.swarm.transport.add)
-        return addP('wstar', rtc)
+        return this.configureWebRTCStar()
       })
+  }
+
+  configureWebRTCStar() {
+    // add multiaddress with signaling server to our peer id
+    const ownAddress = multiaddr(multiAddrString(SIGNAL_SERVER_IP, SIGNAL_SERVER_PORT, this.identity.id))
+    this._ipfs._libp2pNode.peerInfo.multiaddrs.push(ownAddress)
+
+    // add web rtc star transport
+    const rtc = new WebRTCStar()
+    // listener = rtc.createListener()
+    // listener.listen(ownAddress)
+    const addP = promisify(this._ipfs._libp2pNode.swarm.transport.add)
+    return addP('wstar', rtc)
       .then (() => {
-        return promisify(this._ipfs._libp2pNode.swarm.listen())
+        return promisify(this._ipfs._libp2pNode.swarm.listen)()
       })
       .then(() => {
         return Promise.resolve(this)

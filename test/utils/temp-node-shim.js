@@ -60,6 +60,7 @@ module.exports = {
           node.identity = id
           return node
         })
+        .then(node.configureWebRTCStar)
     }
 
     node.teardown = () => {
