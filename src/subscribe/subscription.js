@@ -76,7 +76,7 @@ class Subscription {
 		const prepended = R.prepend(header, deliveryQueue)
 
 		// header is a new root message
-		const prevHeaderLinkObj = (R.find(R.propEq('name', 'prev'))(header.links))
+		const prevHeaderLinkObj = header.links.prev
 		if (R.isNil(prevHeaderLinkObj)) {
 			return Promise.resolve(prepended)
 		}
