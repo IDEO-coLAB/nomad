@@ -1,3 +1,3 @@
-const Node = require('./node')
+const Node = require('./node-shim')
 
 module.exports = Node
