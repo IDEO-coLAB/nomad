@@ -58,6 +58,6 @@ describe('publish and subscribe:', () => {
     })
     setTimeout(() => {
       pubNode.publish(message)
-    }, 5000)
+    }, 20000)
   })
 })

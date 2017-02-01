@@ -35,6 +35,34 @@ module.exports = class ShimNode extends Node {
     this.configureWebRTCStar = this.configureWebRTCStar.bind(this)
   }
 
+  startWithPrivateKey (privKey) {
+    const self = this
+    const VERSION = '3'
+
+    let config = require('./init-files/default-config.json')
+
+    return promisify(PeerId.create)({bits: 2048})
+      .then((keys) => {
+        config.Identity = {
+          PeerID: keys.toB58String(),
+          PrivKey: keys.privKey.bytes.toString('base64')
+        }
+        opts.log('done')
+        opts.log('peer identity: ' + config.Identity.PeerID)
+
+        return promisify(self._repo.version.set)(VERSION)
+      })
+      .then(() => promisify(self._repo.config.set)(config))
+      .then(self._loadP)
+      .then(self._ipfs.goOnlineP)
+      .then(self._ipfs.id)
+      .then((id) => {
+        self.identity = id
+        log.info(`${MODULE_NAME}: Started ${self.identity.id}`)
+        return self
+      })
+  }
+
   start () {
     return super.start()
       .then(() => {
@@ -117,5 +145,5 @@ module.exports = class ShimNode extends Node {
         log.err('err: ', err)
         return Promise.resolve(null)
       })
-  }  
+  }
 }
