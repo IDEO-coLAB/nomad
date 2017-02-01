@@ -13,7 +13,8 @@
   /**
    * @param {function} new message handler.
    */
-  constructor (ipfs, handler) {
+  constructor (subscriptionId, ipfs, handler) {
+    this.subscriptionId = subscriptionId
     this.ipfs = ipfs
     this.handler = handler
     this.queue = new PQueue({concurrency: 1})
@@ -33,7 +34,12 @@
         return streamToString(stream)
       })
       .then((message) => {
-        this.handler(message)
+        const messageObj = {
+          message: message,
+          id: this.subscriptionId,
+          link: header.multihash
+        }
+        this.handler(messageObj)
         return Promise.resolve(null)
       })
   }

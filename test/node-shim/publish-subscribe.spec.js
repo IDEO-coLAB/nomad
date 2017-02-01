@@ -52,8 +52,10 @@ describe('publish and subscribe:', () => {
     const id = pubNode.identity.id
     console.log('publishing id is', id)
     console.log('subscribing id is', subNode.identity.id)
-    subNode.subscribe([id], (msg) => {
-      expect(msg).to.deep.equal(message)
+    subNode.subscribe([id], (msgObj) => {
+      expect(msgObj.message).to.deep.equal(message)
+      expect(msgObj.id).to.deep.equal(id)
+      expect(msgObj.link).to.exist
       done()
     })
     setTimeout(() => {
