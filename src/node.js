@@ -3,7 +3,8 @@ const path = require('path')
 const IPFS = require('ipfs')
 const PQueue = require('p-queue')
 
-const promisifyIPFS = require('./utils/promisify-ipfs')
+const promisifyIPFS = require('./utils/ipfs-promisify')
+const overloadIPFS = require('./utils/ipfs-overload')
 const log = require('./utils/log')
 const publish = require('./publish')
 const { SubscriptionsManager } = require('./subscribe')
@@ -39,7 +40,10 @@ module.exports = class Node {
    */
   constructor (config = DEFAULT_CONFIG) {
     this._ipfsConfig = config
-    this._ipfs = promisifyIPFS(new IPFS(config.repo))
+
+    let base = new IPFS(config.repo)
+    let overloaded = overloadIPFS(base)
+    this._ipfs = promisifyIPFS(overloaded)
 
     this._publish = publish(this)
     this._subscriptionsManager = new SubscriptionsManager(this)
@@ -56,7 +60,7 @@ module.exports = class Node {
    */
   start () {
     return this._ipfs.initP(this._ipfsConfig.ipfs)
-      .then(this._loadP)
+      .then(this._ipfs._loadP)
       .then(this._ipfs.goOnlineP)
       .then(this._ipfs.id)
       .then((id) => {

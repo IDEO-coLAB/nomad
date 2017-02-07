@@ -4,6 +4,10 @@ const MessageHeaderCache = require('../local-state').MessageHeaderCache
 const MessageHeaderWarehouse = require('./message-header-warehouse')
 const HeaderMessageResolver = require('./header-message-resolver')
 
+const log = require('../utils/log')
+
+const MODULE_NAME = 'SUBSCRIPTION'
+
 // when a new header comes in, follow prev links and deliver
 // older messages not yet delivered up to this many
 const ITERATION_LIMIT = 1000000
@@ -41,6 +45,9 @@ class Subscription {
 			this.warehouse.addMessageHeader(header)
 			this.cache.addMessageHeader(header.multihash, header)
 		}
+
+		log.info(`${MODULE_NAME}: Subscribed to ${this.id}`)
+
 		return this.ipfs.pubsub.subscribe(this.id, this.pubsubMessageReceiver)
 	}
 
@@ -48,7 +55,7 @@ class Subscription {
 	// Why does unsubscribe need a ref to ipfsHandler?
 	stop () {
 		this.ipfs.pubsub.unsubscribe(this.id, this.pubsubMessageReceiver)
-		log.info(`${MODULE_NAME}: Unsubscribed from ${this.id}`)
+		log.info(`${MODULE_NAME}: Stopped subscribing to ${this.id}`)
 	}
 
 	// tracks which messages have been delivered to user
@@ -61,23 +68,29 @@ class Subscription {
 	}
 
 	recursiveFetchHeader (header, lastDeliveredHeader, deliveryQueue) {
+		log.info(`${MODULE_NAME}: Recursive fetch current header: ${header.multihash} | last header delivered: ${lastDeliveredHeader.multihash} | delivery queue length: ${deliveryQueue.length}`)
+
 		// base cases, end recursion
 		// too many iterations
 		if (deliveryQueue.length > this.iterationLimit) {
+			log.info(`${MODULE_NAME}: Recursive fetch reached the iteration limit (${this.iterationLimit})`)
 			return Promise.resolve(deliveryQueue)
 		}
 
 		// no more previous headers that we haven't processed
 		if (header.multihash === lastDeliveredHeader.multihash) {
+			log.info(`${MODULE_NAME}: Recursive fetch reached a previously delivered header (${header.multihash})`)
 			return Promise.resolve(deliveryQueue)
 		}
 
 		// header is new so add to queue
 		const prepended = R.prepend(header, deliveryQueue)
+		log.info(`${MODULE_NAME}: Recursive fetch discovered a new header ${header.multihash}`)
 
-		// header is a new root message
 		const prevHeaderLinkObj = (R.find(R.propEq('name', 'prev'))(header.links))
+		// header is a new root message
 		if (R.isNil(prevHeaderLinkObj)) {
+			log.info(`${MODULE_NAME}: Recursive fetch discovered a new root ${header.multihash}`)
 			return Promise.resolve(prepended)
 		}
 
@@ -89,10 +102,13 @@ class Subscription {
 	}
 
 	processMessageHeader (header) {
+		log.info(`${MODULE_NAME}: Processing message header: ${header.multihash}`)
+
 		return this.getHead()
 			.then((lastDeliveredHeader) => {
+				// we've seen this message before
 				if (lastDeliveredHeader && lastDeliveredHeader.data.idx >= header.data.idx) {
-					// we've seen this message before
+					log.info(`${MODULE_NAME}: Previously delivered this message (${header.multihash})`)
 					// delete from the cache because we're dealing with it
 					this.cache.deleteMessageHeader(header.multihash)
 					return Promise.resolve(null)
@@ -100,6 +116,7 @@ class Subscription {
 
 				// haven't seen this header before
 				if (R.isNil(lastDeliveredHeader)) {
+					log.info(`${MODULE_NAME}: First time receiving a message (${header.multihash}) from subscription ${this.id}`)
 					// this is a new subscription for this node and this is first message
 					// don't fetch previous messages, just deliver this one
 					this.cache.deleteMessageHeader(header.multihash)

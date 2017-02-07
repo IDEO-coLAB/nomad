@@ -5,6 +5,10 @@
 
  const PQueue = require('p-queue')
 
+ const log = require('../utils/log')
+
+ const MODULE_NAME = 'HEADER_WAREHOUSE'
+
  // Currently assuming that this doesn't need to be persisted to disk, only needs to be in memory
  // TODO: should we be using Maps. What about browser compatability?
 
@@ -15,13 +19,15 @@
    */
   constructor (subscription) {
     this.handler = subscription.processMessageHeader.bind(subscription)
-    this.queue = new PQueue({concurrency: 1})
+    this.queue = new PQueue({ concurrency: 1 })
   }
 
-  addMessageHeader (messageHeader) {
+  addMessageHeader (header) {
+    log.info(`${MODULE_NAME}: Adding ${header.multihash} to the warehouse queue`)
+
     this.queue.add(() => {
-      // handler needs to be promise returning
-      return this.handler(messageHeader)
+      // Note: handler needs to be promise returning
+      return this.handler(header)
     })
   }
 }

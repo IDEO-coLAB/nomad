@@ -8,8 +8,6 @@ const Subscription = require('./subscription')
  * - Error handling on subscribe receive fails...
  */
 
-const MODULE_NAME = 'SUBSCRIPTIONS'
-
 class SubscriptionsManager {
   constructor(node) {
     this.node = node

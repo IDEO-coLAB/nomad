@@ -16,11 +16,10 @@ const MODULE_NAME = 'SHIM-NODE'
 const SIGNAL_SERVER_IP = '138.197.196.251'
 const SIGNAL_SERVER_PORT = '10000'
 
-
-const DEFAULT_CONFIG = {
+let DEFAULT_CONFIG = {
   db: `${path.resolve(__dirname)}/.nomad-store`,
-  repo: `${path.resolve(__dirname)}/.ipfs-store`,
-  ipfs: { emptyRepo: true, bits: 2048 }
+  repo: `${path.resolve(__dirname)}/.ipfs-store-1`,
+  ipfs: { bits: 2048, emptyRepo: true }
 }
 
 // helper function to construct multiaddress strings
@@ -32,65 +31,57 @@ module.exports = class ShimNode extends Node {
   // Overrides of Node methods
   constructor (config = DEFAULT_CONFIG) {
     super(config)
-    this.configureWebRTCStar = this.configureWebRTCStar.bind(this)
+    // this.configureWebRTCStar = this.configureWebRTCStar.bind(this)
   }
 
-  startWithPrivateKey (privKey) {
-    const self = this
-    const VERSION = '3'
+  // startWithPrivateKey (privKey) {
 
-    let config = require('./init-files/default-config.json')
+  //   this._ipfsConfig.ipfs.privKey = privKey
 
-    return promisify(PeerId.create)({bits: 2048})
-      .then((keys) => {
-        config.Identity = {
-          PeerID: keys.toB58String(),
-          PrivKey: keys.privKey.bytes.toString('base64')
-        }
-        opts.log('done')
-        opts.log('peer identity: ' + config.Identity.PeerID)
+  //   return this._ipfs.initP(this._ipfsConfig.ipfs)
+  //     .then(this._ipfs._loadP)
+  //     .then(this._ipfs.goOnlineP)
+  //     .then(this._ipfs.id)
+  //     .then((id) => {
+  //       this.identity = id
+  //       log.info(`${MODULE_NAME}: Started ${this.identity.id}`)
+  //       console.log('started with id: ', this.identity.id)
+  //       return this
+  //     })
+  // }
 
-        return promisify(self._repo.version.set)(VERSION)
-      })
-      .then(() => promisify(self._repo.config.set)(config))
-      .then(self._loadP)
-      .then(self._ipfs.goOnlineP)
-      .then(self._ipfs.id)
-      .then((id) => {
-        self.identity = id
-        log.info(`${MODULE_NAME}: Started ${self.identity.id}`)
-        return self
-      })
-  }
+  start (privKey) {
+    if (privKey) {
+      this._ipfsConfig.ipfs.privKey = privKey
+    }
 
-  start () {
     return super.start()
-      .then(() => {
-        return this.configureWebRTCStar()
-      })
+      // .then(() => {
+      //   return this.configureWebRTCStar()
+      // })
   }
 
-  configureWebRTCStar() {
-    // add multiaddress with signaling server to our peer id
-    const ownAddress = multiaddr(multiAddrString(SIGNAL_SERVER_IP, SIGNAL_SERVER_PORT, this.identity.id))
-    this._ipfs._libp2pNode.peerInfo.multiaddrs.push(ownAddress)
+  // configureWebRTCStar() {
+  //   // add multiaddress with signaling server to our peer id
+  //   const ownAddress = multiaddr(multiAddrString(SIGNAL_SERVER_IP, SIGNAL_SERVER_PORT, this.identity.id))
+  //   this._ipfs._libp2pNode.peerInfo.multiaddrs.push(ownAddress)
 
-    // add web rtc star transport
-    const rtc = new WebRTCStar()
-    // listener = rtc.createListener()
-    // listener.listen(ownAddress)
-    const addP = promisify(this._ipfs._libp2pNode.swarm.transport.add)
-    return addP('wstar', rtc)
-      .then (() => {
-        return promisify(this._ipfs._libp2pNode.swarm.listen)()
-      })
-      .then(() => {
-        return Promise.resolve(this)
-      })
-      .catch((err) => {
-        log.err('err: ', err)
-      })
-  }
+  //   // add web rtc star transport
+  //   const rtc = new WebRTCStar()
+  //   // listener = rtc.createListener()
+  //   // listener.listen(ownAddress)
+  //   const addP = promisify(this._ipfs._libp2pNode.swarm.transport.add)
+  //   return addP('wstar', rtc)
+  //     .then (() => {
+  //       return promisify(this._ipfs._libp2pNode.swarm.listen)()
+  //     })
+  //     .then(() => {
+  //       return Promise.resolve(this)
+  //     })
+  //     .catch((err) => {
+  //       log.err('err: ', err)
+  //     })
+  // }
 
   subscribe (ids, handler) {
     // ids not passed

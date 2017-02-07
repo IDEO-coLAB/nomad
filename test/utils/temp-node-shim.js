@@ -32,9 +32,11 @@ module.exports = {
               throw err
             }
 
-             // Swarm addresses are empty because shim-node will add them for WebRTCStar transport
+            const oldAddrs = config.Addresses.Swarm
+
+            // Swarm addresses are empty because shim-node will add them for WebRTCStar transport
             config.Addresses = {
-              Swarm: [],
+              Swarm: oldAddrs.filter((addr) => addr.includes('webrtc')), // only using the webrtc address: hacky, remove
               API: `/ip4/127.0.0.1/tcp/31${offset}`,
               Gateway: `/ip4/127.0.0.1/tcp/32${offset}`
             }

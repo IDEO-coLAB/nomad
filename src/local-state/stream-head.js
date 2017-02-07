@@ -5,6 +5,9 @@
 
 const Datastore = require('nedb')
 
+const log = require('../utils/log')
+
+const MODULE_NAME = 'STREAM_HEAD'
 
 // OPEN QUESTION:
 // Should I be able to remove a node from this db?
@@ -41,10 +44,14 @@ class State {
           reject(err)
           return
         }
+
         if (object === null) {
+          log.info(`${MODULE_NAME}: No head found for subscription ${streamHash}`)
           resolve(null)
           return
         }
+
+        log.info(`${MODULE_NAME}: Head found for subscription ${streamHash}`)
         resolve(object.object)
         return
       })
@@ -74,6 +81,8 @@ class State {
               reject(err)
               return
             }
+
+            log.info(`${MODULE_NAME}: Head (${newObj.object.multihash}) set for subscription ${streamHash}`)
             resolve(newObj.object)
           })
           return
@@ -92,12 +101,15 @@ class State {
               reject(errorUpdateNotFound)
               return
             }
+
             // Return the most recent one
             this.db.findOne({ streamHash: streamHash }, (err, updatedObj) => {
               if (err) {
                 reject(err)
                 return
               }
+
+              log.info(`${MODULE_NAME}: Head (${updatedObj.object.multihash}) set for subscription ${streamHash}`)
               resolve(updatedObj.object)
             })
           }
