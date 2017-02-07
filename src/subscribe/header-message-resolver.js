@@ -17,7 +17,8 @@ class HeaderMessageResolver {
   /**
    * @param {function} new message handler.
    */
-  constructor (ipfs, handler) {
+  constructor (subscriptionId, ipfs, handler) {
+    this.subscriptionId = subscriptionId
     this.ipfs = ipfs
     this.handler = handler
     this.queue = new PQueue({concurrency: 1})
@@ -37,7 +38,14 @@ class HeaderMessageResolver {
       })
       .then((message) => {
         log.info(`${MODULE_NAME}: Delivering message for ${header.multihash}`)
-        this.handler(message)
+
+        const messageObj = {
+          message: message,
+          id: this.subscriptionId,
+          link: header.multihash
+        }
+        this.handler(messageObj)
+
         return Promise.resolve(null)
       })
   }

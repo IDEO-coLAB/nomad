@@ -34,7 +34,7 @@ class Subscription {
 		this.warehouse = new MessageHeaderWarehouse(this)
 
 		// Find and make sense of on-network messages
-		this.headerMessageResolver = new HeaderMessageResolver(this.ipfs, newMessageCallback)
+		this.headerMessageResolver = new HeaderMessageResolver(id, this.ipfs, newMessageCallback)
 	}
 
 	start () {
