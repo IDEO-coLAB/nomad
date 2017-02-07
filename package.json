@@ -30,6 +30,7 @@
   "homepage": "https://github.com/IDEO-coLAB/nomad#readme",
   "dependencies": {
     "async": "2.1.4",
+    "browserify-zlib-next": "^1.0.1",
     "chai": "3.5.0",
     "debug": "2.2.0",
     "detect-node": "2.0.3",

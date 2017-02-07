@@ -8,7 +8,7 @@ node.start()
   .then(() => {
     console.log('PRIV_KEY TEST STARTED')
     // HOW do we handle failed subscribes - nodes that are offline - ids that cannot be dialed are rejected promises?
-    node.subscribe(['QmNSv6sjcx72AZy7AWg4WXEGBv1gKaggW9qSWDFPyHjJTF'], (msg) => {
+    node.subscribe(['QmSdu1keYghcM1U7Vzb2uK94SMQmWBuSWdnY4QssMB7HDC'], (msg) => {
       console.log('============ DELIVERING ===========>', msg)
     })
   })

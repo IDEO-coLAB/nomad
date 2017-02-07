@@ -47,6 +47,17 @@ const config = {
     ],
   },
 
+  /*
+    * In order to transfer files, this is a very important step in your Webpack
+    * configuration, see more at:
+    * https://github.com/ipfs/js-ipfs#use-in-the-browser-with-browserify-webpack-or-any-bundler
+    */
+   resolve: {
+     alias: {
+       zlib: 'browserify-zlib-next'
+     }
+   }
+
   // // TODO: figure out minification error
   // plugins: [
   //   new webpack.optimize.UglifyJsPlugin({
