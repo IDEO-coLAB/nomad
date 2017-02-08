@@ -4,8 +4,6 @@ const peerId = require('peer-id')
 const waterfall = require('async/waterfall')
 const parallel = require('async/parallel')
 
-const addDefaultAssets = require('../../node_modules/ipfs/src/core/components/init-assets')
-
 const SIGNAL_SERVER_IP = '138.197.196.251'
 const SIGNAL_SERVER_PORT = '10000'
 
@@ -34,7 +32,7 @@ module.exports = (instance) => {
       let config
       // Pre-set config values.
       try {
-        config = require('../../node_modules/ipfs/src/init-files/default-config.json')
+        config = require('../default-config.json')
       } catch (err) {
         return callback(err)
       }
@@ -79,12 +77,6 @@ module.exports = (instance) => {
             // add empty unixfs dir object (go-ipfs assumes this exists)
             (cb) => self.object.new('unixfs-dir', cb)
           ]
-
-          if (typeof addDefaultAssets === 'function') {
-            tasks.push(
-              (cb) => addDefaultAssets(self, opts.log, cb)
-            )
-          }
 
           parallel(tasks, (err) => {
             if (err) {
