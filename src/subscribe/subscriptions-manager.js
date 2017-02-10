@@ -35,7 +35,7 @@ class SubscriptionsManager {
    */
   unsubscribe(id) {
     const subscription = this.subscriptions.get(id)
-    subscription.end()
+    subscription.stop()
     this.subscriptions.delete(id)
   }
 }

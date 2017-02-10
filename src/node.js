@@ -1,10 +1,10 @@
 const R = require('ramda')
 const path = require('path')
 const IPFS = require('ipfs')
+const PeerId = require('peer-id')
 const PQueue = require('p-queue')
 
 const promisifyIPFS = require('./utils/ipfs-promisify')
-const overloadIPFS = require('./utils/ipfs-overload')
 const log = require('./utils/log')
 const publish = require('./publish')
 const { SubscriptionsManager } = require('./subscribe')
@@ -12,7 +12,7 @@ const State = require('./local-state').StreamHead
 
 const MODULE_NAME = 'NODE'
 
-const queue = new PQueue({concurrency: 1})
+const queue = new PQueue({ concurrency: 1 })
 
 /**
  * TODO:
@@ -21,12 +21,32 @@ const queue = new PQueue({concurrency: 1})
  * - API call to get list of subscription ids.
  */
 
-// temporarily moved to ShimNode
+// // temporarily moved to ShimNode
 // const DEFAULT_CONFIG = {
 //   db: `${path.resolve(__dirname)}/.nomad-store`,
 //   repo: `${path.resolve(__dirname)}/.ipfs-store`,
 //   ipfs: { emptyRepo: true, bits: 2048 }
 // }
+
+
+
+const SIGNAL_SERVER_IP = '138.197.196.251'
+const SIGNAL_SERVER_PORT = '10000'
+
+// helper function to construct multiaddress strings
+const multiAddrString = (ip, port, peerId) => {
+  return `/libp2p-webrtc-star/ip4/${ip}/tcp/${port}/ws/ipfs/${peerId}`
+}
+
+const ipfsDefaultConfig = require('./config/ipfs-default-config.json')
+
+
+
+
+
+
+
+
 
 /**
  * Class: Node
@@ -41,9 +61,10 @@ module.exports = class Node {
   constructor (config = DEFAULT_CONFIG) {
     this._ipfsConfig = config
 
-    let base = new IPFS(config.repo)
-    let overloaded = overloadIPFS(base)
-    this._ipfs = promisifyIPFS(overloaded)
+    // let base = new IPFS(config.repo)
+    // let overloaded = overloadIPFS(base)
+    // this._ipfs = promisifyIPFS(overloaded)
+    this._ipfs = promisifyIPFS(new IPFS(config.repo))
 
     this._publish = publish(this)
     this._subscriptionsManager = new SubscriptionsManager(this)
@@ -58,8 +79,83 @@ module.exports = class Node {
    *
    * @returns {Promise} resolves with the node's identity
    */
-  start () {
+  start (privKey) {
+
+    let ipfsConfig = JSON.parse(JSON.stringify(ipfsDefaultConfig))
+
+    const updateConfig = (id) => {
+      // Set identity
+      const pId = id.toJSON()
+      ipfsConfig.Identity.PeerID = pId.id
+      ipfsConfig.Identity.PrivKey = pId.privKey
+
+      // Set the webRTC address
+      // const ssConfig = JSON.parse(JSON.stringify(signalServerConfig))
+      const webRTCAddr = multiAddrString(SIGNAL_SERVER_IP, SIGNAL_SERVER_PORT, pId.id)
+      ipfsConfig.Addresses.Swarm = ipfsConfig.Addresses.Swarm.concat([ webRTCAddr ])
+
+      // createFromJSON
+      return ipfsConfig
+    }
+
+
+
+
     return this._ipfs.initP(this._ipfsConfig.ipfs)
+
+
+      .then((config) => {
+        return new Promise((resolve, reject) => {
+          this._ipfs._repo.config.get((err, config) => {
+            if (err) {
+              return reject(err)
+            }
+            console.log('GOT THE CONFIG', config)
+            return resolve()
+          })
+        })
+      })
+
+      .then(() => {
+        if (privKey) {
+          return new Promise((resolve, reject) => {
+            PeerId.createFromPrivKey(privKey, (err, id) => {
+              if (err) {
+                return reject(err)
+              }
+              console.log('CREATED __WITH__ PRIV KEY')
+              return resolve(updateConfig(id))
+            })
+          })
+        }
+
+        return new Promise((resolve, reject) => {
+          PeerId.create(this._ipfsConfig.ipfs, (err, id) => {
+            if (err) {
+              return reject(err)
+            }
+            console.log('CREATED WITHOUT PRIV KEY')
+            return resolve(updateConfig(id))
+          })
+        })
+      })
+
+      .then((config) => {
+        return new Promise((resolve, reject) => {
+          this._ipfs._repo.config.set(config, (err) => {
+            if (err) {
+              return reject(err)
+            }
+            console.log('===============\n\n\n\n\n================')
+            console.log('SET THE CONFIG', config)
+            return resolve()
+          })
+        })
+      })
+
+
+
+
       .then(this._ipfs._loadP)
       .then(this._ipfs.goOnlineP)
       .then(this._ipfs.id)
