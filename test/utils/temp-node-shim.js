@@ -6,25 +6,10 @@ const leftPad = require('left-pad')
 const cmd = require('./cmd-runner')
 const createTempRepo = require('./temp-repo')
 const createTempLocalState = require('./temp-local-state')
-const Node = require('../../src/node-shim')
-
-
-
-
-const SIGNAL_SERVER_IP = '138.197.196.251'
-const SIGNAL_SERVER_PORT = '10000'
-
-// helper function to construct multiaddress strings
-const multiAddrString = (ip, port, peerId) => {
-  return `/libp2p-webrtc-star/ip4/${ip}/tcp/${port}/ws/ipfs/${peerId}`
-}
-
-const ipfsDefaultConfig = require('../../src/config/ipfs-default-config.json')
-
-
-
-
-
+const ShimNode = require('../../src/node-shim')
+// const sigServConfig = require('../../src/config/signal-server-config.json')
+// const ipfsDefaultConfig = require('../../src/config/ipfs-default-config.json')
+// const { webRTCMultiAddr } = require('../../src/utils/ipfs-strings')
 
 module.exports = {
   create: (num) => {
@@ -36,10 +21,10 @@ module.exports = {
 
     const offset = leftPad(num, 3, 0)
 
-    let node = new Node(factoryConfig)
+    let node = new ShimNode(factoryConfig)
 
     // This fn offsets the default ports => needed when running multiple nodes
-    // at once. As a result, we use this commanf to start the test nodes and we
+    // at once. As a result, we use this command to start the test nodes and we
     // can skip the typical 'node.start()' call when testing with multiple nodes
     node.startWithOffset = () => {
       // Functon to update the config before the new IPFS instance is loaded from it
@@ -50,16 +35,11 @@ module.exports = {
               throw err
             }
 
-            const oldAddrs = config.Addresses.Swarm
-
-            const webRTCAddr = multiAddrString(SIGNAL_SERVER_IP, SIGNAL_SERVER_PORT, config.Identity.PeerID)
-            // ipfsConfig.Addresses.Swarm = ipfsConfig.Addresses.Swarm.concat([ webRTCAddr ])
-
+            // const webRTCAddr = webRTCMultiAddr(sigServConfig.IP, sigServConfig.port, config.Identity.PeerID)
 
             // Swarm addresses are empty because shim-node will add them for WebRTCStar transport
             config.Addresses = {
-              // Swarm: oldAddrs.filter((addr) => addr.includes('webrtc')), // only using the webrtc address: hacky, remove
-              Swarm: [ webRTCAddr ],
+              // Swarm: [ webRTCAddr ],
               API: `/ip4/127.0.0.1/tcp/31${offset}`,
               Gateway: `/ip4/127.0.0.1/tcp/32${offset}`
             }
@@ -85,7 +65,7 @@ module.exports = {
           node.identity = id
           return node
         })
-        .then(node.configureWebRTCStar)
+      //   .then(node.configureWebRTCStar)
     }
 
     node.teardown = () => {

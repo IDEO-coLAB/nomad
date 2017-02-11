@@ -6,7 +6,7 @@ const nodeFactory = require('./../utils/temp-node')
 
 const HASH_ENCODING = { enc: 'base58' }
 
-describe('publish:', () => {
+describe.only('publish:', () => {
   let nodeA
   let nodeAId
   let ipfs
@@ -32,7 +32,7 @@ describe('publish:', () => {
 
   before(() => {
     return Promise.all([
-        nodeFactory.create(1),
+        nodeFactory.create(3),
         ipfsFactory.create(2)
       ])
       .then((results) => {
@@ -47,6 +47,7 @@ describe('publish:', () => {
         nodeAId = nodeA.identity.id
         // Connect ipfs to the node - used for network data confirmation
         ipfs.swarm.connectP = promisify(ipfs.swarm.connect)
+        console.log(nodeA.identity.addresses)
         return ipfs.swarm.connectP(nodeA.identity.addresses[0])
       })
       .then(() => {
