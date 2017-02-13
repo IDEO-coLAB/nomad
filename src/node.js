@@ -104,11 +104,6 @@ module.exports = class Node {
       const webRTCAddr = webRTCMultiAddr(sigServConfig.IP, sigServConfig.port, peerId.id)
       newConfig.Addresses.Swarm = newConfig.Addresses.Swarm.concat([ webRTCAddr ])
 
-      console.log('AFTER newConfig.Addresses')
-      console.log('====================================================')
-      console.log(newConfig.Addresses.Swarm)
-      console.log('====================================================\n\n\n')
-
       return newConfig
     }
 
