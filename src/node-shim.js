@@ -19,8 +19,8 @@ const MODULE_NAME = 'SHIM-NODE'
 // const SIGNAL_SERVER_PORT = '10000'
 
 let DEFAULT_CONFIG = {
-  db: `${path.resolve(__dirname)}/.nomad-store`,
-  repo: `${path.resolve(__dirname)}/.ipfs-store`,
+  db: `${path.resolve(process.cwd())}/store/nomad-store`,
+  repo: `${path.resolve(process.cwd())}/store/ipfs-store`,
   ipfs: { bits: 2048, emptyRepo: true }
 }
 
