@@ -110,7 +110,7 @@ module.exports = class Node {
             if (err) {
               return reject(err)
             }
-            console.log('GOT THE CONFIG', config)
+            // console.log('GOT THE CONFIG', config)
             return resolve()
           })
         })
@@ -123,7 +123,7 @@ module.exports = class Node {
               if (err) {
                 return reject(err)
               }
-              console.log('CREATED __WITH__ PRIV KEY')
+              // console.log('CREATED __WITH__ PRIV KEY')
               return resolve(updateConfig(id))
             })
           })
@@ -134,7 +134,7 @@ module.exports = class Node {
             if (err) {
               return reject(err)
             }
-            console.log('CREATED WITHOUT PRIV KEY')
+            // console.log('CREATED WITHOUT PRIV KEY')
             return resolve(updateConfig(id))
           })
         })
@@ -146,8 +146,8 @@ module.exports = class Node {
             if (err) {
               return reject(err)
             }
-            console.log('===============\n\n\n\n\n================')
-            console.log('SET THE CONFIG', config)
+            // console.log('===============\n\n\n\n\n================')
+            // console.log('SET THE CONFIG', config)
             return resolve()
           })
         })
